@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Gokula Kumaran — Game & Full-Stack Developer</title>
+<meta name="description" content="Gokula Kumaran — Game & Full-Stack Developer. An interactive voyage through space: games, shaders, web and AI projects." />
+<meta name="theme-color" content="#05060A" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Gokula Kumaran — Game & Full-Stack Developer" />
+<meta property="og:description" content="An interactive voyage through space: games, shaders, web and AI projects." />
+<meta property="og:image" content="images/projects/portfoliov2.png" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2305060A'/%3E%3Ccircle cx='50' cy='50' r='15' fill='%2305060A' stroke='%23FFB454' stroke-width='5'/%3E%3Cellipse cx='50' cy='50' rx='40' ry='13' fill='none' stroke='%236C63FF' stroke-width='5' transform='rotate(-20 50 50)'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet" />
+<style>html{background:#05060A;color:#F3F1EA}</style>
+<link rel="stylesheet" href="css/core.css" />
+<link rel="stylesheet" href="css/hud.css" />
+<link rel="stylesheet" href="css/flow.css" />
+<link rel="stylesheet" href="css/voyage-a.css" />
+<link rel="stylesheet" href="css/voyage-b.css" />
+<link rel="stylesheet" href="css/voyage-c.css" />
+<link rel="stylesheet" href="css/voyage-d.css" />
+<link rel="stylesheet" href="css/extras.css" />
+</head>
+<body>
+
+<!-- ═══ backdrop (owner: cosmos.js) ═══ -->
+<canvas id="cosmos" aria-hidden="true"></canvas>
+
+<!-- @hud BEGIN — owner: hud.js / hud.css · loader, cursor, header + nav + mobile menu, HUD readouts, orbit map, scroll progress, toasts -->
+<a class="skip-link" href="#story">Skip to content</a>
+<noscript><style>#loader,.reticle{display:none!important}.hud-in{opacity:1!important;visibility:visible!important}</style></noscript>
+
+<div class="scroll-progress hud-in" aria-hidden="true"><i id="scrollBar"></i></div>
+
+<header class="site-header hud-in" id="siteHeader">
+  <a class="brand" href="#p0" aria-label="Gokula Kumaran — return to Origin"><span class="brand-mark">GK</span><span class="brand-sub" aria-hidden="true">Voyager / GK-01</span></a>
+  <nav class="site-nav" id="siteNav" aria-label="Primary">
+    <a href="#p1">Role</a>
+    <a href="#p2">About</a>
+    <a href="#p2-edu">Education</a>
+    <a href="#p3">Work</a>
+    <a href="#p3-intern">Internships</a>
+    <a href="#p4">Stack</a>
+    <a href="#p5">Certs</a>
+    <a href="#p6">Contact</a>
+    <i class="nav-bar" id="navBar" aria-hidden="true"></i>
+  </nav>
+  <div class="header-tools">
+    <div class="audio-ctl" role="group" aria-label="Audio">
+      <button type="button" class="audio-btn audio-music" id="musicBtn" aria-pressed="false" aria-label="Music" data-sfx="toggle" data-sfx-hover="none" data-cursor="Music" data-cursor-lock>
+        <span class="spectrum" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </button>
+      <button type="button" class="audio-btn audio-sfx" id="sfxBtn" aria-pressed="false" aria-label="Sound effects" data-sfx="toggle" data-sfx-hover="none" data-cursor="SFX" data-cursor-lock>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3l4-3.5v12l-4-3.5H4z"/><path class="ico-on" d="M15 9.5a3.5 3.5 0 0 1 0 5M17.5 7a7 7 0 0 1 0 10"/><path class="ico-off" d="M15.5 9.5l5 5m0-5l-5 5"/></svg>
+      </button>
+    </div>
+    <button type="button" class="console-btn" data-action="palette" aria-label="Open ship console" data-sfx-hover="none" data-cursor-lock>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l4 4-4 4M12.5 16H19"/></svg>
+      <kbd id="consoleKey">Ctrl K</kbd>
+    </button>
+    <a class="hire-btn" href="#p6">Hire me</a>
+    <button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="starChart" aria-label="Open star chart" data-sfx="open">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 8.5h16M4 15.5h10"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="star-chart" id="starChart" role="dialog" aria-modal="true" aria-labelledby="chartTitle">
+  <div class="chart-head">
+    <p class="chart-title" id="chartTitle">Star chart <span id="chartCount">· 10 sectors</span></p>
+    <button type="button" class="chart-close" id="chartClose" aria-label="Close star chart" data-sfx="close">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <ol class="chart-list" id="chartList"></ol>
+  <div class="chart-foot">
+    <a class="hire-btn" href="#p6">Hire me</a>
+    <button type="button" class="console-btn" data-action="palette">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l4 4-4 4M12.5 16H19"/></svg>
+      Ship console
+    </button>
+  </div>
+</div>
+
+<p class="sector-chip hud-in" id="sectorChip" aria-hidden="true"><b id="chipIdx">00</b><span id="chipName">Origin</span></p>
+
+<i class="hud-tick hud-tick-tl hud-in" aria-hidden="true"></i><i class="hud-tick hud-tick-tr hud-in" aria-hidden="true"></i><i class="hud-tick hud-tick-bl hud-in" aria-hidden="true"></i><i class="hud-tick hud-tick-br hud-in" aria-hidden="true"></i>
+<div class="hud" id="hud" aria-hidden="true">
+  <div class="hud-sector hud-in">
+    <p class="hud-count">Sector <b id="hudIdx">00</b> / <span id="hudTotal">09</span></p>
+    <p class="hud-name" id="hudName">Origin</p>
+    <p class="hud-plain" id="hudPlain">Hero</p>
+    <span class="hud-prog"><i id="hudProg"></i></span>
+  </div>
+  <dl class="hud-telemetry hud-in">
+    <div><dt>Vel</dt><dd><span id="hudVel">0000</span> px/s</dd></div>
+    <div><dt>T+</dt><dd id="hudClock">00:00</dd></div>
+    <div><dt>Local</dt><dd id="hudTime">--:--</dd></div>
+    <div><dt>Render</dt><dd id="hudTier">Tier 0</dd></div>
+  </dl>
+</div>
+
+<nav class="orbit hud-in" id="orbit" aria-label="Sectors">
+  <ol class="orbit-list" id="orbitList"></ol>
+  <i class="orbit-ship" id="orbitShip" aria-hidden="true"></i>
+</nav>
+<div class="rail hud-in" id="rail" aria-hidden="true"></div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<div class="reticle" id="reticle" aria-hidden="true">
+  <i class="reticle-ring"></i><i class="reticle-dot"></i>
+  <i class="reticle-corner rc-tl"></i><i class="reticle-corner rc-tr"></i><i class="reticle-corner rc-bl"></i><i class="reticle-corner rc-br"></i>
+  <span class="reticle-label"></span>
+</div>
+
+<div id="loader" class="loader" role="dialog" aria-modal="true" aria-labelledby="loaderTitle">
+  <div class="loader-core">
+    <p class="loader-brand" id="loaderTitle">Voyager OS · GK-01</p>
+    <ol class="loader-log" id="loaderLog" aria-hidden="true"></ol>
+    <div class="loader-meter" aria-hidden="true"><span class="loader-bar"><i id="loaderBar"></i></span><span class="loader-pct" id="loaderPct">000</span></div>
+    <div class="loader-go" id="loaderGo">
+      <button type="button" class="loader-engage" id="engageBtn" data-sfx="none" data-sfx-hover="none" data-cursor-lock>Engage</button>
+      <button type="button" class="loader-silent" id="engageSilent" data-sfx="none" data-sfx-hover="none">Engage silent</button>
+      <p class="loader-keys" aria-hidden="true"><kbd>Enter</kbd> engage <i></i> <kbd>M</kbd> silent</p>
+    </div>
+    <p class="sr-only" id="loaderStatus" role="status" aria-live="polite">Preparing the voyage.</p>
+  </div>
+</div>
+<!-- @hud END -->
+
+<!-- @flow BEGIN — owner: flow.js / flow.css · mission-briefing modal, command palette, hyperspace flash overlay -->
+<!-- fixed roots only: flow.js builds the interiors on first use (and re-creates a root if it is missing) -->
+<div class="flow-flash" id="flash" aria-hidden="true"></div>
+<div class="briefing" id="briefing" hidden></div>
+<div class="console" id="console" hidden></div>
+<!-- @flow END -->
+
+<main id="story">
+
+  <!-- @sector:origin BEGIN — owner: voyage-a -->
+  <section class="panel panel-hero" id="p0" data-sector="0" aria-labelledby="heroName">
+    <div class="panel-inner hero">
+      <p class="hero-eyebrow hud-label" data-reveal data-delay="1500"><span class="dot" aria-hidden="true"></span><span id="heroAvail">Available for projects · Q4 2026</span></p>
+      <h1 class="hero-name" id="heroName" aria-label="Gokula Kumaran">
+        <span class="hero-row hero-row-1" aria-hidden="true">Gokula</span>
+        <span class="hero-row hero-row-2" aria-hidden="true">Kumaran</span>
+      </h1>
+      <p class="hero-sub lead legible" data-reveal data-delay="1650">Building <b>immersive digital experiences</b>, interactive applications, and high-fidelity game worlds — from a single idea to a deployed product.</p>
+      <div class="hero-ctas" data-reveal data-delay="1800">
+        <a href="#p3" class="btn btn-primary" data-magnetic data-spot data-cursor="WORK" data-cursor-lock>View work <span class="arrow" aria-hidden="true">↓</span></a>
+        <a href="#p6" class="btn" data-magnetic data-spot data-cursor="CONTACT" data-cursor-lock>Get in touch <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+      <p class="hero-coords hud-label legible" data-reveal="fade" data-delay="1950"><span id="heroCoords">11.1271° N · 78.6569° E</span><i aria-hidden="true"></i><span id="heroLoc">Tamil Nadu, India</span></p>
+      <ul class="hero-shortcuts hud-label legible" data-reveal="fade" data-delay="2100" aria-label="Keyboard shortcuts">
+        <li><button type="button" class="hero-key" data-action="palette" data-cursor="OPEN"><kbd data-mod>Ctrl</kbd><kbd>K</kbd><span>console</span></button></li>
+        <li><button type="button" class="hero-key" data-action="music" data-cursor="TOGGLE"><kbd>M</kbd><span>music</span></button></li>
+        <li><a class="hero-key" href="#p1" data-cursor="NEXT" aria-label="Navigate to the next sector"><kbd>↑</kbd><kbd>↓</kbd><span>navigate</span></a></li>
+        <li><button type="button" class="hero-key" data-action="game" data-cursor="PLAY"><kbd>G</kbd><span>play</span></button></li>
+      </ul>
+    </div>
+    <div class="scroll-hint hud-label legible" aria-hidden="true"><span>Scroll</span><i></i></div>
+  </section>
+  <!-- @sector:origin END -->
+
+  <!-- @sector:signal BEGIN — owner: voyage-a -->
+  <section class="panel panel-role" id="p1" data-sector="1" aria-labelledby="roleTitle">
+    <div class="panel-inner grid-2 role">
+      <div class="role-copy">
+        <header class="sec-head role-head">
+          <div class="sec-kicker" data-reveal><span class="sec-num">01</span><i></i><span data-decode>Signal</span><span class="role-kicker-plain">/ Role</span></div>
+          <h2 class="sec-title role-h" id="roleTitle" data-split="words">A <em>multi-disciplinary</em> maker working at the seam between design and engineering.</h2>
+        </header>
+        <div class="role-signal" data-reveal data-delay="250">
+          <p class="role-signal-top hud-label">
+            <span class="role-signal-tag"><svg viewBox="0 0 8 9" aria-hidden="true"><path d="M0 0l8 4.5L0 9z"/></svg>Incoming:</span>
+            <span class="role-signal-count" id="roleCount" aria-hidden="true">01 / 06</span>
+          </p>
+          <p class="role-signal-now"><span id="roleTyped" aria-hidden="true"></span></p>
+          <ul class="sr-only" id="roleList" aria-label="Roles"></ul>
+          <i class="role-signal-bar" aria-hidden="true"><b id="roleBar"></b></i>
+        </div>
+        <p class="role-desc lead legible" data-reveal data-delay="350">I prototype in code when that's faster than Figma, sit in on research when the answer isn't obvious, and ship the actual production component instead of handing off a spec and hoping.</p>
+      </div>
+      <div class="role-holo brackets" data-reveal="scale" data-delay="300" data-cursor="DRAG" data-sfx="none" data-sfx-hover="none">
+        <canvas id="roleCanvas" aria-hidden="true"></canvas>
+        <div class="role-picks" id="rolePicks" role="group" aria-label="Highlight a role on the globe"></div>
+        <p class="role-holo-cap hud-label" aria-hidden="true">Drag to rotate · select a beacon</p>
+      </div>
+    </div>
+  </section>
+  <!-- @sector:signal END -->
+
+  <!-- @sector:crew BEGIN — owner: voyage-b -->
+  <section class="panel panel-about" id="p2" data-sector="2" aria-labelledby="aboutTitle">
+    <div class="panel-inner about-grid">
+      <figure class="dossier" id="aboutDossier" data-reveal="fade" data-delay="150" data-tilt="5" data-spot data-cursor="SCAN">
+        <div class="dossier-frame brackets">
+          <div class="dossier-view">
+            <img class="dossier-img" id="aboutPhoto" src="images/profile2.jpg" alt="Portrait of Gokula Kumaran" width="1080" height="1371" loading="lazy" decoding="async" draggable="false" />
+            <span class="dossier-hint hud-label" id="aboutHint" aria-hidden="true">X-ray lens</span>
+          </div>
+          <span class="dossier-scan" aria-hidden="true"></span>
+        </div>
+        <figcaption class="dossier-cap">
+          <dl class="dossier-data" id="aboutData" data-reveal-group="60"></dl>
+        </figcaption>
+      </figure>
+      <div class="about-copy">
+        <div class="sec-kicker" data-reveal><span class="sec-num">02</span><i></i><span data-decode>Crew</span><span class="about-plain">/ About</span></div>
+        <h2 class="about-h" id="aboutTitle" data-split="words">I make <em>things</em> that feel alive.</h2>
+        <div class="about-body legible">
+          <p class="lead" data-reveal data-delay="100">I'm a passionate <strong>Game &amp; Full-Stack Developer</strong> focused on building immersive digital experiences and modern web solutions using Unity, C#, React, and JavaScript.</p>
+          <p data-reveal data-delay="200">Currently pursuing <strong>B.Tech in Computer Science &amp; Business Systems</strong> at Ramco Institute of Technology — blending a business mindset with technical engineering.</p>
+          <p data-reveal data-delay="300">Remote-friendly, based in Tamil Nadu, India, and quietly optimistic about what the next browser can do.</p>
+        </div>
+        <div class="about-loadout">
+          <p class="about-loadout-label hud-label" data-reveal data-delay="350"><span>Loadout</span><i aria-hidden="true"></i><b id="aboutTagCount"></b></p>
+          <ul class="chips about-tags" id="aboutTags" data-reveal-group="40" aria-label="Skills and tools"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- @sector:crew END -->
+
+  <!-- @sector:trajectory BEGIN — owner: voyage-b -->
+  <section class="panel panel-edu" id="p2-edu" data-sector="3" aria-labelledby="eduTitle">
+    <div class="panel-inner">
+      <header class="sec-head">
+        <div class="sec-kicker" data-reveal><span class="sec-num">03</span><i></i><span data-decode>Trajectory</span></div>
+        <h2 class="sec-title" id="eduTitle" data-split="words">Education</h2>
+        <p class="sec-meta" data-reveal data-delay="100">02 institutions · click to expand</p>
+        <p class="sec-lede" data-reveal data-delay="200">Where I <b>started</b>, where I'm <b>going</b> — and the institutions that shaped how I think about software, design, and systems.</p>
+      </header>
+      <div class="edu-track" id="eduTrack"></div>
+    </div>
+  </section>
+  <!-- @sector:trajectory END -->
+
+  <!-- @sector:missions BEGIN — owner: voyage-c -->
+  <section class="panel panel-work" id="p3" data-sector="4" aria-labelledby="workTitle">
+    <div class="panel-inner">
+      <header class="sec-head">
+        <div class="sec-kicker" data-reveal><span class="sec-num">04</span><i></i><span data-decode>Missions</span></div>
+        <h2 class="sec-title" id="workTitle" data-split="words">Selected work</h2>
+        <p class="sec-meta" id="workMeta" data-reveal data-delay="100">06 projects · click to open</p>
+      </header>
+      <!-- voyage-c.js renders <ol class="missions"> here from GK.data.projects -->
+      <div class="work-list" id="workList"></div>
+    </div>
+  </section>
+  <!-- @sector:missions END -->
+
+  <!-- @sector:telemetry BEGIN — owner: voyage-c -->
+  <section class="panel panel-metrics" id="p3-5" data-sector="5" aria-labelledby="metricsTitle">
+    <div class="panel-inner">
+      <div class="sec-kicker" data-reveal><span class="sec-num">05</span><i></i><span data-decode>Telemetry</span><span class="metrics-plain" aria-hidden="true">Stats</span></div>
+      <h2 class="sr-only" id="metricsTitle">Stats</h2>
+      <!-- voyage-c.js renders four <li class="gauge"> here from GK.data.metrics -->
+      <ul class="metrics-grid" id="metricsGrid" data-reveal-group="90"></ul>
+    </div>
+  </section>
+  <!-- @sector:telemetry END -->
+
+  <!-- @sector:deployments BEGIN — owner: voyage-c -->
+  <section class="panel panel-intern" id="p3-intern" data-sector="6" aria-labelledby="internTitle">
+    <div class="panel-inner">
+      <header class="sec-head">
+        <div class="sec-kicker" data-reveal><span class="sec-num">06</span><i></i><span data-decode>Deployments</span></div>
+        <h2 class="sec-title" id="internTitle" data-split="words">Internships</h2>
+        <p class="sec-meta" id="internMeta" data-reveal data-delay="100">02 experiences · certificates on file</p>
+        <p class="sec-lede" data-reveal data-delay="200">Real-world exposure to <b>production codebases</b>, deadlines, and the kind of feedback you only get when your work ships to actual users.</p>
+      </header>
+      <!-- voyage-c.js renders two <article class="deploy"> here from GK.data.internships -->
+      <div class="intern-list" id="internList"></div>
+    </div>
+  </section>
+  <!-- @sector:deployments END -->
+
+  <!-- @sector:systems BEGIN — owner: voyage-d -->
+  <section class="panel panel-stack" id="p4" data-sector="7" aria-labelledby="stackTitle">
+    <div class="panel-inner">
+      <header class="sec-head">
+        <div class="sec-kicker" data-reveal><span class="sec-num">07</span><i></i><span data-decode>Systems</span><span class="vd-plain">/ Stack</span></div>
+        <h2 class="sec-title" id="stackTitle" data-split="words">Technical stack</h2>
+        <p class="sec-meta" data-reveal data-delay="100">04 disciplines · one orbit each</p>
+      </header>
+      <div class="stack-layout">
+        <div class="stack-orbit brackets" data-reveal="fade" data-delay="200">
+          <canvas class="stack-canvas" id="stackCanvas" aria-hidden="true" data-cursor="DRAG" data-sfx="none" data-sfx-hover="none"></canvas>
+          <p class="stack-readout hud-label legible" id="stackReadout" aria-hidden="true"><span class="stack-swatch"></span><span class="stack-readout-text"></span></p>
+          <p class="stack-hint hud-label legible" id="stackHint" aria-hidden="true">Drag to spin · hover a planet</p>
+          <ul class="sr-only" id="stackProxy" aria-label="Skills by discipline — select one to highlight its orbit"></ul>
+        </div>
+        <div class="stack-cards" id="stackCards" data-reveal-group="90"></div>
+      </div>
+    </div>
+  </section>
+  <!-- @sector:systems END -->
+
+  <!-- @sector:constellations BEGIN — owner: voyage-d -->
+  <section class="panel panel-certs" id="p5" data-sector="8" aria-labelledby="certsTitle">
+    <div class="panel-inner">
+      <header class="sec-head">
+        <div class="sec-kicker" data-reveal><span class="sec-num">08</span><i></i><span data-decode>Constellations</span><span class="vd-plain">/ Certs</span></div>
+        <h2 class="sec-title" id="certsTitle" data-split="words">Certifications</h2>
+        <p class="sec-meta" data-reveal data-delay="100">06 credentials · click any star</p>
+      </header>
+      <div class="certs-sky brackets" data-reveal="fade" data-delay="200">
+        <canvas class="certs-canvas" id="certsCanvas" aria-hidden="true" data-sfx="none" data-sfx-hover="none"></canvas>
+        <p class="certs-hint hud-label legible" id="certsHint" aria-hidden="true">Hover a star to ring it · click to open</p>
+      </div>
+      <div class="certs-grid" id="certsGrid" role="group" aria-label="Certificates" data-reveal-group="60"></div>
+    </div>
+  </section>
+  <!-- @sector:constellations END -->
+
+  <!-- @sector:transmission BEGIN — owner: voyage-d -->
+  <section class="panel panel-contact" id="p6" data-sector="9" aria-labelledby="contactTitle">
+    <div class="panel-inner">
+      <header class="sec-head">
+        <div class="sec-kicker" data-reveal><span class="sec-num">09</span><i></i><span data-decode>Transmission</span><span class="vd-plain">/ Contact</span></div>
+        <h2 class="sec-title contact-h legible" id="contactTitle" data-split="words">Let's build <em>the future.</em></h2>
+      </header>
+      <div class="contact-grid">
+        <div class="contact-info">
+          <p class="contact-text lead legible" data-reveal data-delay="100">Have something that needs a <strong>design eye</strong> and someone who can <strong>build it</strong>? I'm currently open to select freelance work and full-time opportunities.</p>
+          <div class="contact-mail" data-reveal data-delay="200">
+            <button type="button" class="contact-email" id="emailLink" data-magnetic="0.15" data-cursor="COPY" data-cursor-lock data-sfx="none" aria-label="Copy email address gokulakumaran2007@gmail.com">
+              <span class="contact-email-text" id="emailText">gokulakumaran2007@gmail.com</span>
+              <span class="contact-email-icon" aria-hidden="true">
+                <svg class="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></svg>
+                <svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+              </span>
+            </button>
+            <a class="contact-open" id="mailAppLink" href="mailto:gokulakumaran2007@gmail.com?subject=Project%20Inquiry&body=Hi%20Gokula%2C%0A%0AI%20want%20to%20talk%20about%20a%20project%20..." data-cursor="MAIL">Open mail app <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+          </div>
+          <dl class="contact-details" data-reveal data-delay="300">
+            <div class="contact-detail"><dt>Phone</dt><dd id="contactPhone">+91 73739 80805</dd></div>
+            <div class="contact-detail"><dt>Location</dt><dd id="contactLocation">Tamil Nadu, India</dd></div>
+            <div class="contact-detail"><dt>Status</dt><dd class="is-open"><span class="dot" aria-hidden="true"></span><span id="contactStatus">Open to work</span></dd></div>
+          </dl>
+          <ul class="social-row" id="socialRow" aria-label="Find me elsewhere" data-reveal data-delay="400"></ul>
+        </div>
+        <form class="tx glass" id="contactForm" aria-label="Send a message" data-reveal data-delay="200" data-spot novalidate>
+          <div class="tx-strip hud-label"><span class="dot" aria-hidden="true"></span><span>Transmission console</span><span aria-hidden="true">·</span><span class="tx-state" id="txState" role="status">Channel open</span></div>
+          <canvas class="tx-wave" id="txWave" aria-hidden="true"></canvas>
+          <div class="tx-row">
+            <div class="tx-field"><label for="cf-name">Your name</label><input class="tx-input" type="text" id="cf-name" name="name" placeholder="Alex Johnson" autocomplete="name" maxlength="80" required aria-describedby="cf-name-err" /><p class="tx-err" id="cf-name-err" hidden></p></div>
+            <div class="tx-field"><label for="cf-email">Email</label><input class="tx-input" type="email" id="cf-email" name="email" placeholder="alex@company.com" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="120" required aria-describedby="cf-email-err" /><p class="tx-err" id="cf-email-err" hidden></p></div>
+          </div>
+          <fieldset class="tx-field tx-services"><legend>Service <span class="tx-optional">· optional</span></legend><div class="tx-chips" id="txServices"></div></fieldset>
+          <div class="tx-field"><label for="cf-message">Message</label><textarea class="tx-input" id="cf-message" name="message" rows="5" placeholder="Tell me about your project..." maxlength="1200" required aria-describedby="cf-message-err"></textarea><p class="tx-err" id="cf-message-err" hidden></p></div>
+          <div class="tx-actions">
+            <button type="submit" class="btn btn-primary tx-submit" id="submitBtn" data-magnetic data-spot data-sfx="none" data-cursor="SEND" data-cursor-lock><span id="submitLabel">Send message</span><span class="arrow" aria-hidden="true">→</span><svg class="ico-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></button>
+            <p class="tx-note" id="txNote" hidden>No mail app? <button type="button" class="tx-copy" id="txCopy" data-sfx="none">Copy the address</button></p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+  <!-- @sector:transmission END -->
+
+  <!-- @wormhole BEGIN — owner: flow.js / flow.css · closing wormhole that loops back to Origin, plus the footer -->
+  <section class="wormhole" id="wormhole" aria-labelledby="wormholeTitle">
+    <div class="wormhole-stage">
+      <div class="wormhole-core">
+        <p class="wormhole-kicker hud-label legible" data-reveal>Beyond sector 09 · uncharted</p>
+        <h2 class="wormhole-title legible" id="wormholeTitle" data-reveal>End of charted space</h2>
+        <p class="wormhole-lede legible" data-reveal data-delay="100">
+          <span data-when="motion">Keep falling and the voyage loops back to where it began.</span>
+          <span data-when="reduced">The voyage ends here. The button takes you back to where it began.</span>
+        </p>
+        <div class="wormhole-actions" data-reveal data-delay="200">
+          <button type="button" class="btn wormhole-return" id="wormholeReturn" data-magnetic data-spot data-cursor="Loop">Return to Origin
+            <svg class="flow-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+        <p class="wormhole-gauge hud-label" aria-hidden="true"><span>Loop</span><i></i><span id="wormholePct">00%</span></p>
+      </div>
+      <footer class="site-footer">
+        <p>© <span id="year"></span> S. Gokula Kumaran</p>
+        <p class="footer-tag">Design + build · same person</p>
+        <a href="#p0" class="back-to-top link">Back to top ↑</a>
+      </footer>
+    </div>
+  </section>
+  <!-- @wormhole END -->
+
+</main>
+
+<!-- @extras BEGIN — owner: extras.js / extras.css · secret panel + Asteroid Run mini-game overlays -->
+<div class="secret" id="secret" role="dialog" aria-modal="true" aria-labelledby="secretTitle" hidden>
+  <div class="secret-veil" data-secret-close></div>
+  <article class="secret-card">
+    <button class="secret-close" type="button" data-secret-close aria-label="Close secret panel"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+    <p class="hud-label secret-meta">// secret_unlocked.txt</p>
+    <h2 class="secret-title" id="secretTitle">You found <em>the room behind the code</em>.</h2>
+    <p class="secret-body" aria-hidden="true"></p>
+    <p class="secret-sr sr-only"></p>
+    <ul class="secret-favs chips"></ul>
+    <p class="secret-sig"></p>
+    <div class="secret-actions">
+      <button class="btn btn-primary" type="button" data-secret-play data-sfx="none" data-magnetic data-spot>Launch Asteroid Run <span class="arrow" aria-hidden="true">▸</span></button>
+      <span class="hud-label"><kbd>Esc</kbd> close</span>
+    </div>
+  </article>
+</div>
+
+<div class="game" id="game" role="dialog" aria-modal="true" aria-label="Asteroid Run mini-game" hidden>
+  <canvas class="game-canvas" tabindex="-1" aria-hidden="true"></canvas>
+  <div class="game-hud hud-label" aria-hidden="true">
+    <span>Score<b data-g="score">00000</b></span>
+    <span>Best<b data-g="best">00000</b></span>
+    <span>Shields<b data-g="shields">◆◆◆</b></span>
+  </div>
+  <button class="game-close" type="button" data-game-close aria-label="Close game"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+  <div class="game-panel">
+    <p class="hud-label">Arcade · hidden level</p>
+    <h2 class="game-title">Asteroid Run</h2>
+    <p class="game-sub"></p>
+    <button class="btn btn-primary" type="button" data-game-start data-sfx="none">Launch</button>
+  </div>
+</div>
+<!-- @extras END -->
+
+<noscript><p style="position:fixed;inset:auto 0 0 0;z-index:99999;margin:0;padding:1rem;background:#0B0D15;color:#F3F1EA;font-family:system-ui;text-align:center">This portfolio is an interactive experience and needs JavaScript. Reach me at gokulakumaran2007@gmail.com.</p></noscript>
+
+<!-- order matters: core → data → fx → engines → sections → boot (classic scripts so file:// works) -->
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/cosmos.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/flow.js"></script>
+<script src="js/voyage-a.js"></script>
+<script src="js/voyage-b.js"></script>
+<script src="js/voyage-c.js"></script>
+<script src="js/voyage-d.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>

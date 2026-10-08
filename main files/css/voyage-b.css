@@ -1,0 +1,332 @@
+/* ═══════════════════════════════════════════════════════════════
+   VOYAGER · voyage-b.css
+   Sector 2 "Crew" (about)        .panel-about
+   Sector 3 "Trajectory" (edu)    .panel-edu
+   Tokens only. Violet = interactive, cyan = data, green = status.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────── sector 2 · crew ───────────────────────── */
+.panel-about .about-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(2.5rem, 6vw, 5.5rem);
+  align-items: center;
+}
+
+/* ── dossier ── */
+.panel-about .dossier {
+  --lens: 120px;
+  --lx: var(--mx, 50%);          /* fx.js feeds --mx / --my (px) on hover */
+  --ly: var(--my, 30%);
+  width: 100%;
+  max-width: 400px;
+  max-width: min(400px, 46svh);
+  justify-self: center;
+}
+/* the figure reveals through its own wipe, not the generic fade */
+.panel-about .dossier[data-reveal].is-in { animation: none; }
+
+.panel-about .dossier-frame {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  --brk-inset: -7px;
+  --brk-len: 14px;
+  --brk-color: var(--line-2);
+}
+.panel-about .dossier.is-spot .dossier-frame,
+.panel-about .dossier.is-scanning .dossier-frame {
+  --brk-inset: -11px;
+  --brk-color: var(--cyan);
+}
+.panel-about .dossier-view {
+  position: absolute; inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-solid);
+  touch-action: pan-y;
+}
+.panel-about .dossier-img,
+.panel-about .dossier-xray {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 20%;
+  -webkit-user-select: none; user-select: none;
+  -webkit-user-drag: none;
+}
+.panel-about .dossier-img { z-index: 0; }
+
+/* x-ray: the same portrait, cold and monochrome, seen only through the lens */
+.panel-about .dossier-xray {
+  z-index: 1;
+  filter: grayscale(1) contrast(1.45) brightness(1.3) sepia(1) hue-rotate(150deg) saturate(2.4);
+  -webkit-mask-image: radial-gradient(circle var(--lens) at var(--lx) var(--ly), #000 60%, transparent);
+  mask-image: radial-gradient(circle var(--lens) at var(--lx) var(--ly), #000 60%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-2) var(--ease-out);
+}
+/* floor shade for the hint + inner hairline */
+.panel-about .dossier-view::before {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(to top, var(--bg), transparent 30%);
+  box-shadow: inset 0 0 0 1px var(--line);
+  opacity: 0.82;
+}
+/* lens rim */
+.panel-about .dossier-view::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: radial-gradient(circle var(--lens) at var(--lx) var(--ly), transparent 61.5%, var(--cyan) 62.5%, var(--cyan) 63.5%, transparent 64.5%);
+  opacity: 0;
+  transition: opacity var(--t-2) var(--ease-out);
+}
+.panel-about .dossier.is-spot .dossier-xray,
+.panel-about .dossier.is-scanning .dossier-xray { opacity: 1; }
+.panel-about .dossier.is-spot .dossier-view::after,
+.panel-about .dossier.is-scanning .dossier-view::after { opacity: 0.55; }
+
+.panel-about .dossier-hint {
+  position: absolute; left: 0.85rem; bottom: 0.75rem; z-index: 4;
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+.panel-about .dossier-hint::before {
+  content: ''; width: 7px; height: 7px; flex: none;
+  border: 1px solid var(--cyan); border-radius: 50%;
+}
+
+/* reveal: wipe top → bottom behind a scan hairline, once */
+.panel-about .dossier-scan {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.panel-about .dossier-scan::before {
+  content: ''; position: absolute; left: -7px; right: -7px; top: 0; height: 1px;
+  background: var(--cyan);
+}
+.panel-about .dossier.is-in .dossier-view {
+  animation: vb-wipe 900ms var(--ease-in-out) backwards;
+  animation-delay: calc(var(--delay, 0) * 1ms);
+}
+.panel-about .dossier.is-in .dossier-scan {
+  animation: vb-scan-move 900ms var(--ease-in-out) both, vb-scan-fade 900ms linear both;
+  animation-delay: calc(var(--delay, 0) * 1ms);
+}
+.panel-about .dossier.is-in .dossier-frame::after {
+  animation: vb-fade var(--t-3) var(--ease-out) backwards;
+  animation-delay: calc(var(--delay, 0) * 1ms);
+}
+.panel-about .dossier.is-in .dossier-cap {
+  animation: vb-fade var(--t-3) var(--ease-out) backwards;
+  animation-delay: calc(var(--delay, 0) * 1ms + 520ms);
+}
+@keyframes vb-wipe { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes vb-scan-move { from { translate: 0 0; } to { translate: 0 100%; } }
+@keyframes vb-scan-fade { 0% { opacity: 0; } 12% { opacity: 1; } 86% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes vb-fade { from { opacity: 0; } }
+
+/* data lines */
+.panel-about .dossier-cap {
+  margin-top: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: translate var(--t-3) var(--ease-out), border-color var(--t-2);
+}
+.panel-about .dossier.is-tilting .dossier-cap { translate: 0 0 22px; border-color: var(--line-2); }
+.panel-about .dossier-data { margin: 0; --delay: 620; }
+.panel-about .dossier-row {
+  display: grid;
+  grid-template-columns: 4.9rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.55rem 0.85rem;
+}
+.panel-about .dossier-row + .dossier-row { border-top: 1px solid var(--line); }
+.panel-about .dossier-row.is-in { animation-name: vb-line; animation-duration: var(--t-3); }
+@keyframes vb-line { from { opacity: 0; translate: -10px 0; } }
+.panel-about .dossier-row dt {
+  font: 500 var(--fs-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.panel-about .dossier-row dd {
+  margin: 0;
+  font: 500 var(--fs-xs) / 1.3 var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.panel-about .dossier-row.is-name dd { text-transform: uppercase; letter-spacing: 0.12em; }
+.panel-about .dossier-row.is-status dd { display: flex; align-items: center; gap: 0.6rem; }
+.panel-about .dossier-row.is-status .dot { flex: none; }
+
+/* ── copy ── */
+.panel-about .about-copy { min-width: 0; }
+.panel-about .about-copy .sec-kicker { margin-bottom: 1.4rem; }
+.panel-about .about-plain { color: var(--ink-3); }
+.panel-about .about-h {
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  margin-bottom: clamp(1.25rem, 3vh, 2rem);
+}
+.panel-about .about-body p { color: var(--ink-2); max-width: 58ch; }
+.panel-about .about-body p + p { margin-top: 1rem; }
+
+.panel-about .about-loadout { margin-top: clamp(1.6rem, 3.6vh, 2.4rem); }
+.panel-about .about-loadout-label {
+  display: flex; align-items: center; gap: 0.85rem;
+  margin-bottom: 0.9rem;
+  color: var(--ink-2);
+}
+.panel-about .about-loadout-label i {
+  flex: 0 1 56px; height: 1px;
+  background: linear-gradient(90deg, var(--sector-a), transparent);
+}
+.panel-about .about-loadout-label b { color: var(--sector-ink); }
+.panel-about .about-tags { gap: 0.5rem; --delay: 120; }
+.panel-about .about-tags .chip {
+  min-height: 34px;
+  background: var(--surface);
+  transition: color var(--t-2), border-color var(--t-2), background-color var(--t-2), translate var(--t-2) var(--ease-out);
+}
+.panel-about .about-tags .chip.is-in { animation-name: vb-chip; animation-duration: var(--t-3); }
+@keyframes vb-chip { from { opacity: 0; translate: 0 12px; } }
+@media (hover: hover) {
+  .panel-about .about-tags .chip:hover { color: var(--ink); border-color: var(--violet); translate: 0 -2px; }
+}
+
+@media (max-width: 880px) {
+  .panel-about .about-grid { grid-template-columns: minmax(0, 1fr); gap: 2.25rem; }
+  .panel-about .dossier { --lens: 92px; max-width: none; justify-self: start; }
+  .panel-about .dossier-frame { width: min(72vw, 320px); }
+  .panel-about .dossier-cap { max-width: 360px; }
+}
+
+/* ───────────────────────── sector 3 · trajectory ───────────────────────── */
+.panel-edu .edu-track {
+  position: relative;
+  --edu-drop: clamp(6.5rem, 15vh, 9rem);
+  /* the backdrop draws a ringed planet at the right edge: keep the cards out of the last 14vw */
+  --edu-clear: max(0px, calc(14vw - max(var(--gutter), (100vw - var(--max)) / 2)));
+}
+
+/* flight path artwork */
+.panel-edu .traj-wrap { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.panel-edu .traj { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; }
+.panel-edu .traj-guide { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 7; stroke-linecap: round; }
+.panel-edu .traj-path { fill: none; stroke: var(--cyan); stroke-width: 1.5; stroke-linecap: butt; }
+.panel-edu .traj-dot { fill: var(--cyan); opacity: 0; transition: opacity var(--t-3) var(--ease-out); transition-delay: calc(var(--i, 0) * 70ms); }
+.panel-edu .traj.is-far .traj-dot { opacity: var(--o, 0.5); }
+
+.panel-edu .traj-leader { stroke: var(--line-2); stroke-width: 1; opacity: 0; transition: opacity var(--t-3) var(--ease-out), stroke var(--t-2); }
+.panel-edu .traj-node-ring { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 2 3; transition: stroke var(--t-2), opacity var(--t-2); }
+.panel-edu .traj-node-core { fill: var(--surface-solid); stroke: var(--ink-3); stroke-width: 1; transition: fill var(--t-2), stroke var(--t-2); }
+.panel-edu .traj-node-pulse { fill: none; stroke: var(--cyan); stroke-width: 1; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.panel-edu .traj-node.is-lit .traj-leader { opacity: 1; }
+.panel-edu .traj-node.is-lit .traj-node-core { fill: var(--cyan); stroke: var(--cyan); }
+.panel-edu .traj-node.is-lit .traj-node-ring { stroke: var(--cyan); stroke-dasharray: none; opacity: 0.5; }
+.panel-edu .traj-node.is-lit .traj-node-pulse { animation: vb-ring 900ms var(--ease-out) both; }
+.panel-edu .traj-node.is-lit.is-hot .traj-node-ring { opacity: 1; }
+.panel-edu .traj-node.is-lit.is-hot .traj-leader { stroke: var(--cyan); }
+@keyframes vb-ring { from { opacity: 0.9; transform: scale(0.14); } to { opacity: 0; transform: scale(1); } }
+
+.panel-edu .traj-ship { opacity: 0; transition: opacity var(--t-2) var(--ease-out); }
+.panel-edu .traj.is-flying .traj-ship { opacity: 1; }
+.panel-edu .traj-ship-body { fill: var(--ink); }
+.panel-edu .traj-ship-halo { fill: var(--cyan); opacity: 0.16; }
+
+/* waypoint cards — stacked beside a vertical rail by default */
+.panel-edu .edu-points {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  padding-left: 44px;
+}
+.panel-edu .edu-point {
+  width: 100%; max-width: 520px;
+  opacity: 0;
+  translate: 0 18px;
+  pointer-events: none;
+  transition: opacity var(--t-3) var(--ease-out), translate var(--t-3) var(--ease-out);
+}
+.panel-edu .edu-point.is-lit,
+.panel-edu .edu-point:focus-within { opacity: 1; translate: none; pointer-events: auto; }
+
+.panel-edu .waypoint {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 100%; height: 100%;
+  text-align: left;
+  transition: --glow var(--t-3) var(--ease-out), border-color var(--t-2), scale var(--t-1) var(--ease-out);
+}
+.panel-edu .waypoint:hover,
+.panel-edu .waypoint:focus-visible { border-color: var(--line-2); }
+.panel-edu .waypoint:active { scale: 0.985; }
+
+.panel-edu .waypoint-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 21 / 9;
+  overflow: hidden;
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+  background: var(--surface-solid);
+}
+.panel-edu .waypoint-thumb img {
+  width: 100%; height: 100%;
+  max-width: none;
+  object-fit: cover;
+  filter: saturate(0.85) brightness(0.9);
+  transition: scale var(--t-4) var(--ease-out), filter var(--t-3) var(--ease-out);
+}
+.panel-edu .waypoint-thumb::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top, var(--surface-solid), transparent 48%);
+  opacity: 0.8;
+}
+.panel-edu .waypoint:hover .waypoint-thumb img,
+.panel-edu .waypoint:focus-visible .waypoint-thumb img { scale: 1.03; filter: none; }
+
+.panel-edu .waypoint-body { display: grid; align-content: start; gap: 0.4rem; padding: 1rem 1.15rem 1.05rem; }
+.panel-edu .waypoint-tag { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; color: var(--ink-3); }
+.panel-edu .waypoint-tag b { color: var(--sector-ink); }
+.panel-edu .waypoint-tag i { font-style: normal; }
+.panel-edu .waypoint-title {
+  display: block;
+  font: 600 var(--fs-h3) / 1.15 var(--font-display);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.panel-edu .waypoint-org { display: block; font-size: var(--fs-sm); line-height: 1.45; color: var(--ink-2); }
+.panel-edu .waypoint-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin-top: 0.5rem; padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  font: 500 var(--fs-micro) / 1.2 var(--font-mono);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.panel-edu .waypoint-period { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--ink-2); }
+.panel-edu .waypoint-period .dot { flex: none; }
+.panel-edu .waypoint-open { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--accent-ink); white-space: nowrap; }
+.panel-edu .waypoint-open svg { width: 12px; height: 12px; flex: none; transition: translate var(--t-2) var(--ease-out); }
+.panel-edu .waypoint:hover .waypoint-open svg,
+.panel-edu .waypoint:focus-visible .waypoint-open svg { translate: 2px -2px; }
+
+/* wide screens: waypoint A low on the left, B high on the right, the S-curve dives between them */
+@media (min-width: 881px) {
+  .panel-edu .edu-track.is-duo .edu-points {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 2fr) minmax(0, 5fr);
+    gap: 0;
+    align-items: start;
+    padding: 0 var(--edu-clear) 0 0;
+  }
+  .panel-edu .edu-track.is-duo .edu-point { max-width: 400px; }
+  .panel-edu .edu-track.is-duo .edu-point:first-child { grid-column: 1; grid-row: 1; justify-self: start; margin-top: var(--edu-drop); }
+  .panel-edu .edu-track.is-duo .edu-point:last-child { grid-column: 3; grid-row: 1; justify-self: end; margin-bottom: var(--edu-drop); }
+}

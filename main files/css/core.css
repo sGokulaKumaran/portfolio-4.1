@@ -1,0 +1,307 @@
+/* ═══════════════════════════════════════════════════════════════
+   VOYAGER · core.css
+   Design tokens, reset, base typography, panel layout, the shared
+   component kit (section header, glass, brackets, buttons, chips)
+   and the CSS half of the fx.js primitives (reveal / split / tilt
+   / magnetic). Every other stylesheet builds on these tokens.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* animatable custom properties */
+@property --sector-a { syntax: '<color>'; inherits: true; initial-value: #6C63FF; }
+@property --sector-b { syntax: '<color>'; inherits: true; initial-value: #FFB454; }
+@property --glow { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+:root {
+  color-scheme: dark;
+
+  /* ── colour ── */
+  --bg: #05060A;
+  --bg-2: #0A0C14;
+  --ink: #F3F1EA;                 /* primary text */
+  --ink-2: #B9BCC8;               /* secondary text — 6.9:1 over the brightest allowed backdrop */
+  --ink-3: #8A8E9B;               /* labels — use on dark surfaces / HUD only */
+  --ink-4: #3B3F4D;               /* disabled / hairlines on dark */
+  --violet: #6C63FF;              /* fills, strokes, text ≥ 24px */
+  --violet-ink: #A9A4FF;          /* violet for small text (5.9:1) */
+  --amber: #FFB454;
+  --cyan: #00E5FF;
+  --green: #3DDC84;
+  --red: #FF5E7A;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --surface: rgba(8, 10, 16, 0.74);       /* in-flow cards (NO backdrop-filter) */
+  --surface-2: rgba(15, 18, 30, 0.82);
+  --surface-solid: #0B0D15;
+  /* live sector accents — written by core.js on every sector change */
+  --sector-a-rgb: 108, 99, 255;
+  --sector-b-rgb: 255, 180, 84;
+  --sector-ink: #A9A4FF;          /* sector-a lightened for small text */
+  /* fixed semantics: violet = interactive, cyan = focus/data, green = status, amber = one focal highlight.
+     Sector colours are ATMOSPHERE (kickers, hairlines, glows, canvas art), never the meaning of a control. */
+  --accent: var(--violet);
+  --accent-ink: var(--violet-ink);
+  --focus: var(--cyan);
+
+  /* ── type ── */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --fs-hero: clamp(3.4rem, 15.5vw, 14rem);
+  --fs-h2: clamp(2.1rem, 5.4vw, 4.25rem);
+  --fs-h3: clamp(1.15rem, 1.9vw, 1.55rem);
+  --fs-lead: clamp(1rem, 1.25vw, 1.15rem);
+  --fs-body: 1.0625rem;           /* 17px desktop, 16px on small screens */
+  --fs-sm: 0.875rem;
+  --fs-xs: 0.75rem;
+  --fs-micro: 0.6875rem;          /* 11px — smallest text allowed */
+
+  /* ── space ── */
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  --max: 1180px;
+  --header-h: 72px;
+  --radius: 6px;                  /* instrument-panel sharpness */
+  --radius-sm: 3px;
+  --radius-pill: 999px;
+
+  /* ── motion ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);        /* arrivals */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);    /* travel */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* small UI pops */
+  --ease-drift: cubic-bezier(0.22, 0.61, 0.36, 1);  /* slow weightless */
+  --t-1: 160ms;
+  --t-2: 320ms;
+  --t-3: 640ms;
+  --t-4: 1100ms;
+  --stagger: 70ms;
+
+  /* ── layers ── */
+  --z-cosmos: 0;
+  --z-veil: 1;
+  --z-content: 10;
+  --z-hud: 50;
+  --z-header: 100;
+  --z-overlay: 1000;   /* modal 1000 · command palette 1100 · secret/game 1200 */
+  --z-warp: 5000;
+  --z-loader: 9000;
+  --z-cursor: 10000;
+}
+
+/* ───────────────────────── reset ───────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html {
+  background: var(--bg);
+  color: var(--ink);
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  -webkit-text-size-adjust: 100%;
+  transition: --sector-a 1.4s var(--ease-drift), --sector-b 1.4s var(--ease-drift);
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+body {
+  min-height: 100vh;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  overflow-x: clip;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(108, 99, 255, 0.10), transparent 60%),
+    radial-gradient(90% 70% at 85% 110%, rgba(255, 180, 84, 0.06), transparent 60%),
+    var(--bg);
+}
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; margin: 0; padding: 0; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+input, textarea, select { font: inherit; color: inherit; }
+h1, h2, h3, h4, p, figure, blockquote { margin: 0; }
+img, video, canvas, svg { display: block; max-width: 100%; }
+::selection { background: rgba(108, 99, 255, 0.5); color: #fff; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+kbd {
+  font: 500 var(--fs-micro) / 1 var(--font-mono);
+  padding: 0.28em 0.5em; border: 1px solid var(--line-2); border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04); color: var(--ink-2);
+}
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* ───────────────────────── fixed backdrop layers ───────────────────────── */
+#cosmos { position: fixed; inset: 0; width: 100%; height: 100%; z-index: var(--z-cosmos); pointer-events: none; }
+/* vignette, grain and sector tint are rendered inside the cosmos shader — never stack
+   full-viewport blend layers over the live canvas (they force a full recomposite every frame). */
+
+/* ───────────────────────── typography ───────────────────────── */
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.02; letter-spacing: -0.02em; text-wrap: balance; }
+p { text-wrap: pretty; }
+em, .em { font-style: italic; font-weight: 200; color: var(--sector-ink); }
+strong, b { font-weight: 500; color: var(--ink); }
+.lead { font-size: var(--fs-lead); color: var(--ink-2); max-width: 56ch; }
+.muted { color: var(--ink-2); }
+.hud-label {
+  font: 500 var(--fs-micro) / 1.2 var(--font-mono);
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3);
+}
+.hud-label b, .hud-label strong { color: var(--ink); font-weight: 500; }
+/* soft dark halo that keeps copy readable over bright nebula */
+.legible { text-shadow: 0 0 24px rgba(5, 6, 10, 0.85), 0 1px 2px rgba(5, 6, 10, 0.9); }
+
+/* ───────────────────────── layout ───────────────────────── */
+#story { position: relative; z-index: var(--z-content); }
+.panel {
+  position: relative;
+  min-height: 100vh; min-height: 100svh;
+  display: flex; align-items: center;
+  padding: calc(var(--header-h) + clamp(2rem, 6vh, 5rem)) var(--gutter) clamp(3.5rem, 9vh, 6.5rem);
+  scroll-margin-top: 0;
+}
+.panel-inner { position: relative; width: 100%; max-width: var(--max); margin-inline: auto; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
+@media (max-width: 880px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* ── section header (use in every sector for a consistent voice) ──
+   <header class="sec-head">
+     <div class="sec-kicker"><span class="sec-num">04</span><i></i><span data-decode>Missions</span></div>
+     <h2 class="sec-title" data-split="words">Selected work</h2>
+     <p class="sec-meta">06 projects · click to open</p>
+   </header> */
+.sec-head { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 0.75rem 2rem; margin-bottom: clamp(2rem, 5vh, 3.5rem); }
+.sec-kicker { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.85rem; font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); }
+.sec-kicker .sec-num { color: var(--sector-ink); }
+.sec-kicker i { width: 44px; height: 1px; background: linear-gradient(90deg, var(--sector-a), transparent); }
+.sec-title { font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.035em; }
+.sec-meta { font: 400 var(--fs-xs) / 1.4 var(--font-mono); letter-spacing: 0.08em; color: var(--ink-3); text-align: right; padding-bottom: 0.5em; }
+.sec-lede { grid-column: 1 / -1; font-size: var(--fs-lead); color: var(--ink-2); max-width: 58ch; }
+@media (max-width: 640px) { .sec-head { grid-template-columns: 1fr; } .sec-meta { text-align: left; } }
+
+/* ───────────────────────── component kit ───────────────────────── */
+/* glass: translucent card with a pointer-tracked spotlight border.
+   Pair with data-spot or data-tilt so fx.js feeds --mx / --my. */
+.glass {
+  position: relative; isolation: isolate;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    radial-gradient(460px circle at var(--mx, 50%) var(--my, 0%), rgba(var(--sector-a-rgb), calc(var(--glow) * 0.13)), transparent 62%),
+    var(--surface);
+  transition: --glow var(--t-3) var(--ease-out), border-color var(--t-2);
+}
+.glass::before {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 1;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--sector-a), transparent 72%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity var(--t-2);
+}
+.glass:hover, .glass.is-spot, .glass.is-tilting, .glass:focus-visible { --glow: 1; }
+.glass:hover::before, .glass.is-spot::before, .glass.is-tilting::before, .glass:focus-visible::before { opacity: 1; }
+
+/* brackets: four HUD corner ticks */
+.brackets { position: relative; }
+.brackets::after {
+  content: ''; position: absolute; inset: var(--brk-inset, -6px); pointer-events: none;
+  --l: var(--brk-len, 12px); --w: 1px; --c: var(--brk-color, var(--line-2));
+  background:
+    linear-gradient(var(--c), var(--c)) left top / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) left top / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) right top / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) right top / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) left bottom / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) left bottom / var(--w) var(--l),
+    linear-gradient(var(--c), var(--c)) right bottom / var(--l) var(--w),
+    linear-gradient(var(--c), var(--c)) right bottom / var(--w) var(--l);
+  background-repeat: no-repeat;
+  transition: inset var(--t-2) var(--ease-out), opacity var(--t-2);
+}
+
+/* buttons */
+.btn {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.65rem;
+  min-height: 48px; padding: 0.95rem 1.6rem;
+  font: 500 0.8rem / 1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+  border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  color: var(--ink);
+  transition: color var(--t-2), border-color var(--t-2), box-shadow var(--t-3);
+}
+.btn::before {
+  content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit;
+  background: var(--accent);
+  clip-path: circle(0% at var(--mx, 50%) var(--my, 100%));
+  transition: clip-path var(--t-3) var(--ease-out);
+}
+.btn:hover::before, .btn:focus-visible::before { clip-path: circle(160% at var(--mx, 50%) var(--my, 100%)); }
+.btn:hover, .btn:focus-visible { color: #fff; border-color: transparent; box-shadow: 0 12px 40px -10px rgba(108, 99, 255, 0.7); }
+.btn-primary { background: var(--ink); color: #05060A; border-color: transparent; }
+.btn .arrow { display: inline-block; transition: translate var(--t-2) var(--ease-out); }
+.btn:hover .arrow { translate: 4px 0; }
+.btn:active { scale: 0.97; }
+
+/* chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font: 500 var(--fs-xs) / 1 var(--font-mono); letter-spacing: 0.04em;
+  padding: 0.5rem 0.85rem; border: 1px solid var(--line); border-radius: var(--radius-pill);
+  color: var(--ink-2); background: rgba(255, 255, 255, 0.025);
+  transition: color var(--t-2), border-color var(--t-2), background-color var(--t-2);
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+/* animated underline link */
+.link { position: relative; display: inline-block; }
+.link::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: right; transition: transform var(--t-3) var(--ease-out); }
+.link:hover::after, .link:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+
+/* status dot */
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.16); animation: gk-pulse 2.4s ease-in-out infinite; }
+@keyframes gk-pulse { 50% { box-shadow: 0 0 0 7px rgba(61, 220, 132, 0); } }
+
+/* ───────────────────────── fx.js primitives ─────────────────────────
+   Reveals are CSS *animations* with only a `from` keyframe and
+   fill-mode: backwards, so once they finish they leave no residue —
+   components stay free to use transform / translate / scale and
+   their own transitions for hover states.                          */
+html.has-reveal [data-reveal]:not(.is-in) { opacity: 0; }
+[data-reveal].is-in {
+  animation: gk-rise var(--t-4) var(--ease-out) backwards;
+  animation-delay: calc(var(--delay, 0) * 1ms + var(--i, 0) * var(--stagger, 70ms));
+}
+[data-reveal='fade'].is-in { animation-name: gk-fade; }
+[data-reveal='left'].is-in { animation-name: gk-from-left; }
+[data-reveal='right'].is-in { animation-name: gk-from-right; }
+[data-reveal='scale'].is-in { animation-name: gk-scale; }
+[data-reveal='blur'].is-in { animation-name: gk-blur; }
+@keyframes gk-rise { from { opacity: 0; translate: 0 34px; } }
+@keyframes gk-fade { from { opacity: 0; } }
+@keyframes gk-from-left { from { opacity: 0; translate: -48px 0; } }
+@keyframes gk-from-right { from { opacity: 0; translate: 48px 0; } }
+@keyframes gk-scale { from { opacity: 0; scale: 0.92; } }
+@keyframes gk-blur { from { opacity: 0; filter: blur(14px); scale: 1.04; } }
+
+/* split text: every word is a clipping mask, pieces rise through it */
+.s-word { display: inline-block; overflow: hidden; vertical-align: top; white-space: nowrap; padding: 0.12em 0.08em 0.2em; margin: -0.12em -0.08em -0.2em; }
+.s-piece { display: inline-block; will-change: translate; }
+html.has-reveal [data-split]:not(.is-in) .s-piece { opacity: 0; }
+[data-split].is-in .s-piece {
+  animation: gk-piece 1s var(--ease-out) backwards;
+  animation-delay: calc(var(--delay, 0) * 1ms + var(--i, 0) * var(--piece-stagger, 26ms));
+}
+[data-split='words'] { --piece-stagger: 60ms; }
+@keyframes gk-piece { from { opacity: 0; translate: 0 112%; } }
+
+/* tilt + magnetic: fx.js smooths the variables every frame, CSS only maps them */
+[data-tilt] { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transform-style: preserve-3d; }
+[data-tilt].is-tilting { will-change: transform; }
+[data-magnetic] { transform: translate3d(var(--mag-x, 0px), var(--mag-y, 0px), 0); }
+
+/* ───────────────────────── states ───────────────────────── */
+html.is-loading, html.is-loading body { overflow: hidden; }
+html.is-warping #story { pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 760px) { :root { --fs-body: 1rem; --header-h: 60px; } }
