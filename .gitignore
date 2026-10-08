@@ -1,0 +1,56 @@
+# Operating System Files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editor & IDE Directories / Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# AI & Tool Specific Local Configurations
+.claude/
+.gemini/
+
+# Dependency & Package Directories (if any tooling/scripts are used)
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build Outputs & Caches
+dist/
+build/
+.cache/
+.parcel-cache/
+
+# Logs & Temporary Files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tmp
+*.temp
+*.bak
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
