@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · hud.css
+   VOYAGER 6.0 · hud.css
    The ship's chrome — everything fixed on screen that is not an
    overlay: launch sequence, reticle cursor, header + navigation,
    star chart (small-screen menu), HUD readouts, orbit map, scroll
@@ -14,10 +14,6 @@
   --orbit-step: 28px;
 }
 
-/* ───────────────────────── entrance ─────────────────────────
-   Nothing of the HUD exists until ENGAGE; then each piece draws
-   in after its own --d delay. `translate` is used for the offset
-   so components keep `transform` for themselves. */
 .hud-in {
   transition:
     opacity var(--t-3) var(--ease-out) var(--d, 0ms),
@@ -28,9 +24,9 @@ html:not(.is-entered) .hud-in { opacity: 0; visibility: hidden; translate: var(-
 html.is-reduced .hud-in { transition-delay: 0ms !important; }
 
 main#story:focus { outline: none; }
-/* behind the launch veil only the star field shows — the page itself appears on ENGAGE */
 html.is-loading #story { visibility: hidden; }
-html.menu-open, html.menu-open body { overflow: hidden; }
+/* Lock html only so body never becomes a scroll container and un-sticks #wormhole */
+html.menu-open { overflow: hidden; }
 
 /* ───────────────────────── skip link ───────────────────────── */
 .skip-link {
@@ -103,7 +99,7 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .nav-bar.is-on { opacity: 1; }
 .nav-bar.is-sliding { transition: opacity var(--t-2) ease, transform var(--t-2) var(--ease-in-out); }
 
-.header-tools { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; flex: none; }
+.header-tools { display: flex; align-items: center; gap: 0.45rem; margin-left: auto; flex: none; }
 
 .audio-ctl { display: flex; align-items: stretch; border: 1px solid var(--hud-line); border-radius: var(--radius-sm); }
 .audio-btn {
@@ -123,13 +119,26 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   width: 2px; height: 14px; border-radius: 1px; background: currentColor;
   transform-origin: 50% 100%; transform: scaleY(0.14);
 }
-/* off: flat bars with a slash through them */
 .audio-music::after {
   content: ''; position: absolute; left: 50%; top: 50%; width: 24px; height: 1.5px; margin: -0.75px 0 0 -12px;
   background: currentColor; rotate: -38deg; opacity: 0; scale: 0.4 1;
   transition: opacity var(--t-1) ease, scale var(--t-2) var(--ease-out);
 }
 .audio-music[aria-pressed='false']::after { opacity: 1; scale: 1 1; }
+
+.cosmos-btn {
+  display: none; align-items: center; gap: 0.4rem;
+  height: 36px; padding: 0 0.65rem;
+  font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--cyan); border: 1px solid var(--hud-line); border-radius: var(--radius-sm);
+  transition: color var(--t-2), border-color var(--t-2), background-color var(--t-2);
+}
+.cosmos-btn:hover, .cosmos-btn:focus-visible {
+  color: var(--ink); border-color: var(--cyan); background-color: rgba(0, 229, 255, 0.1);
+}
+@media (min-width: 680px) {
+  .cosmos-btn { display: inline-flex; }
+}
 
 .console-btn {
   display: none; align-items: center; gap: 0.55rem; height: 36px; padding: 0 0.6rem 0 0.7rem;
@@ -147,7 +156,7 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   transition: color var(--t-2) ease, background-color var(--t-2) ease;
 }
 .hire-btn:hover, .hire-btn:focus-visible { color: #fff; background-color: var(--accent); }
-.hire-btn:active, .console-btn:active, .audio-btn:active, .menu-btn:active, .chart-close:active { scale: 0.97; }
+.hire-btn:active, .console-btn:active, .cosmos-btn:active, .audio-btn:active, .menu-btn:active, .chart-close:active { scale: 0.97; }
 
 .menu-btn, .chart-close {
   display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none;
@@ -169,7 +178,7 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   .brand-sub { display: inline-block; }
   .site-nav a { padding: 0 0.8rem; }
 }
-html.is-coarse .audio-btn, html.is-coarse .hire-btn, html.is-coarse .console-btn { height: 44px; }
+html.is-coarse .audio-btn, html.is-coarse .hire-btn, html.is-coarse .console-btn, html.is-coarse .cosmos-btn { height: 44px; }
 
 /* ───────────────────────── star chart (menu below 1100px) ───────────────────────── */
 .star-chart {
@@ -219,8 +228,6 @@ html.is-coarse .audio-btn, html.is-coarse .hire-btn, html.is-coarse .console-btn
 @media (min-width: 1100px) { .sector-chip { display: none; } }
 
 /* ───────────────────────── HUD readouts (1100px and up) ───────────────────────── */
-/* a zero-height strip pinned to the bottom edge: the readouts hang off it, so dimming
-   them never promotes a full-viewport layer above the live canvas */
 .hud {
   position: fixed; left: 0; right: 0; bottom: 0; height: 0; z-index: var(--z-hud); pointer-events: none; display: none;
   font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase;
@@ -231,7 +238,6 @@ html.is-coarse .audio-btn, html.is-coarse .hire-btn, html.is-coarse .console-btn
 .hud p, .hud dl, .hud dd, .hud dt { margin: 0; }
 .hud b { font-weight: 500; color: var(--ink); }
 
-/* four corner ticks framing the viewport */
 .hud-tick {
   --d: 750ms;
   position: fixed; z-index: var(--z-hud); pointer-events: none; display: none;
@@ -252,6 +258,14 @@ html.is-coarse .audio-btn, html.is-coarse .hire-btn, html.is-coarse .console-btn
 .hud-telemetry div { display: flex; justify-content: flex-end; gap: 1.1em; }
 .hud-telemetry dd { min-width: 9ch; text-align: right; color: var(--ink-2); }
 .hud-telemetry dd span { color: var(--ink); }
+.hud-tier-btn {
+  pointer-events: auto;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: inherit;
+  transition: color var(--t-1);
+}
+.hud-tier-btn:hover, .hud-tier-btn:focus-visible { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
 /* ───────────────────────── orbit map (1100px and up) ───────────────────────── */
 .orbit {
@@ -341,9 +355,7 @@ html.is-reduced .orbit-node[aria-current]::after { animation: none; transform: t
 .toast.is-out { opacity: 0; translate: 0 6px; }
 @keyframes hud-toast-in { from { opacity: 0; translate: 0 10px; } }
 
-/* ───────────────────────── reticle cursor (fine pointers) ─────────────────────────
-   hud.js writes `transform` on every part; CSS only owns opacity,
-   colour and `scale` for the states. */
+/* ───────────────────────── reticle cursor ───────────────────────── */
 html.has-cursor, html.has-cursor * { cursor: none !important; }
 html.has-cursor input, html.has-cursor textarea,
 html.has-cursor [contenteditable=''], html.has-cursor [contenteditable='true'] { cursor: text !important; }
@@ -389,7 +401,6 @@ html.is-fine .reticle { display: block; }
   position: fixed; inset: 0; z-index: var(--z-loader); overflow: hidden;
   display: grid; place-items: center;
   padding: max(1.5rem, env(safe-area-inset-top, 0px)) max(var(--gutter), env(safe-area-inset-right, 0px)) max(1.5rem, env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px));
-  /* semi-opaque: the calm star field keeps drifting behind the boot log */
   background: radial-gradient(120% 90% at 50% 45%, rgba(5, 6, 10, 0.62), rgba(5, 6, 10, 0.9) 78%);
   color: var(--ink);
   transition: opacity 450ms var(--ease-in-out) 520ms;
@@ -455,14 +466,12 @@ html.is-fine .reticle { display: block; }
 .loader-keys i { width: 12px; height: 1px; margin-inline: 0.3em; background: var(--hud-line-2); }
 html.is-coarse .loader-keys { display: none; }
 
-/* engage: ring burst, log fades, then the whole veil dissolves */
 .loader.is-engaging .loader-brand, .loader.is-engaging .loader-log, .loader.is-engaging .loader-meter,
 .loader.is-engaging .loader-silent, .loader.is-engaging .loader-keys { opacity: 0; }
 .loader.is-engaging .loader-engage { scale: 0.94; border-color: transparent; background-color: transparent; color: transparent; transition-duration: var(--t-2); }
 .loader.is-engaging .loader-engage::before { animation: none; }
 .loader.is-engaging .loader-engage::after { will-change: transform, opacity; animation: hud-burst 640ms var(--ease-out) forwards; }
 @keyframes hud-burst { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(14); } }
-/* reduced motion: no burst, no stagger — a plain 200ms fade (opacity only) */
 html.is-reduced .loader { transition-delay: 0ms; transition-duration: 200ms !important; }
 html.is-reduced .loader-go { translate: 0 0; transition-delay: 0ms; transition-duration: 200ms !important; }
 html.is-reduced .loader-log li { translate: 0 0; }
@@ -474,3 +483,18 @@ html.is-reduced .loader.is-engaging .loader-engage::after { animation: none; }
   .loader-go { margin-top: 18px; }
   .loader-engage { width: 104px; height: 104px; }
 }
+
+.quest-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  height: 36px; padding: 0 0.65rem;
+  font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.1em;
+  color: var(--amber); border: 1px solid var(--hud-line); border-radius: var(--radius-sm);
+  transition: color var(--t-2), border-color var(--t-2), background-color var(--t-2);
+}
+.quest-btn svg { color: var(--amber); }
+.quest-btn:hover, .quest-btn:focus-visible {
+  color: var(--ink); border-color: var(--amber); background-color: rgba(255, 180, 84, 0.1);
+}
+.quest-btn.is-complete { color: var(--green); border-color: rgba(61, 220, 132, 0.45); }
+.quest-btn.is-complete svg { color: var(--green); }
+html.is-coarse .quest-btn { height: 44px; }

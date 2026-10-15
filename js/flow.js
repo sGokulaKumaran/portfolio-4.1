@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · flow.js
+   VOYAGER 6.0 · flow.js
    Travel between sectors and every overlay layer:
      · GK.navTo — cancellable scroll tween for one sector, hyperspace
        jump for two or more
@@ -12,8 +12,6 @@
 (function () {
   'use strict';
 
-  /* Owner's feature, de-fanged: each switch is a polite block and nothing more.
-     Set either to false to hand the browser default back. */
   const PROTECT = { contextMenu: true, devShortcuts: true };
 
   const GK = window.GK;
@@ -25,11 +23,10 @@
     const env = GK.env, state = GK.state, bus = GK.bus;
     const SECTORS = GK.SECTORS;
     const LAST = SECTORS.length - 1;
-    const STOP_WORMHOLE = SECTORS.length;   // pseudo stop after the last sector
+    const STOP_WORMHOLE = SECTORS.length;
     const story = doc.getElementById('story');
     const wormhole = doc.getElementById('wormhole');
 
-    /* ───────────── icons (24px grid, 1.5px stroke) ───────────── */
     const svg = d => '<svg class="flow-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + d + '</svg>';
     const ICON = {
       close: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
@@ -51,7 +48,6 @@
       game: svg('<path d="M12 3.5l2.4 6.1 6.1 2.4-6.1 2.4-2.4 6.1-2.4-6.1-6.1-2.4 6.1-2.4z"/>'),
     };
 
-    /* a fixed root for one of our layers; created if the @flow region lost it */
     function ensure(id, cls, hidden) {
       let node = doc.getElementById(id);
       if (!node) {
@@ -61,9 +57,6 @@
       return node;
     }
 
-    /* ───────────── overlay stack ─────────────
-       Our own layers ('modal', 'palette') plus anything another module
-       announces with overlay:open / overlay:close { name }. */
     const stack = [];
     const topLayer = () => stack[stack.length - 1];
     function dropLayer(name) { const i = stack.indexOf(name); if (i > -1) stack.splice(i, 1); }
@@ -73,8 +66,6 @@
 
     const flow = (GK.flow = { busy: false, overlayOpen: () => stack.length > 0 });
 
-    /* page lock shared by our layers: no scroll (scrollbars are already hidden,
-       so nothing shifts) and the story is inert for keyboard + assistive tech */
     let locks = 0;
     function lock() {
       if (locks++ > 0) return;
@@ -98,12 +89,9 @@
     }
     function refocus(node) {
       if (!node || !node.focus || node === doc.body || !doc.contains(node)) return;
-      try { node.focus({ preventScroll: true }); } catch (err) { /* detached mid-flight */ }
+      try { node.focus({ preventScroll: true }); } catch (err) {}
     }
 
-    /* ───────────── flash layer ─────────────
-       Opacity only, ramps ≥ 150ms. Used at the loop peak and as the jump
-       flash when there is no WebGL backdrop to do it. */
     const flashEl = ensure('flash', 'flow-flash', false);
     flashEl.setAttribute('aria-hidden', 'true');
     let flashTimer = 0;
@@ -115,9 +103,8 @@
       flashTimer = setTimeout(() => flashEl.classList.remove('is-on'), 200);
     }
 
-    /* ───────────── cached geometry ───────────── */
     let whTop = -1, whH = 1, storyTop = 0;
-    let pin = null;                 // keeps a deep link aligned while late layout settles
+    let pin = null;
     let measuredMidJump = false;
     function remeasure() {
       if (root.classList.contains('is-jumping')) { measuredMidJump = true; return; }
@@ -134,11 +121,10 @@
     }
     bus.on('measure', remeasure);
 
-    /* ───────────── travel: resolve a target ───────────── */
     function resolve(target) {
       if (typeof target === 'string') {
         let t = target.charAt(0) === '#' ? target.slice(1) : target;
-        try { t = decodeURIComponent(t); } catch (err) { /* keep the raw hash */ }
+        try { t = decodeURIComponent(t); } catch (err) {}
         if (t === 'story') return { stop: 0, index: 0, id: SECTORS[0].id, top: true };
         if (t === 'wormhole') return wormhole ? { stop: STOP_WORMHOLE, index: LAST, id: 'wormhole' } : null;
         target = GK.scroll.indexOf(t);
@@ -165,7 +151,6 @@
       refocus(h);
     }
 
-    /* ───────────── travel: single step (cancellable scroll tween) ───────────── */
     let tween = null;
     function cancelTween() { if (!tween) return; tween.stop(); tween = null; }
     function tweenTo(y, done) {
@@ -185,11 +170,6 @@
     window.addEventListener('wheel', cancelTween, { passive: true });
     window.addEventListener('touchstart', cancelTween, { passive: true });
 
-    /* ───────────── travel: hyperspace jump ─────────────
-       spool out (content fades + shrinks) → streak peak: teleport while the
-       story is invisible → drop out (flash, content settles). Driven by the
-       shared ticker so it stays in step with GK.warp; a timer guarantees the
-       story can never be left hidden. */
     let jumpJob = null;
     function setOrigin() {
       root.style.setProperty('--jump-oy', Math.round(window.scrollY + window.innerHeight / 2 - storyTop) + 'px');
@@ -257,13 +237,6 @@
       else job.tEnd = Math.min(job.tEnd, job.t + 240);
     }
 
-    /* ───────────── GK.navTo ─────────────
-       target: sector index | element id ("p3") | sector key ("missions") |
-               "wormhole" | "story"; a leading "#" is fine.
-       opts:   instant  — no animation
-               jump     — false forces the one-step tween
-               focus    — false keeps keyboard focus where it is
-               onArrive — called when travel completes (not if cancelled) */
     let loopArmed = false;
     function navTo(target, opts) {
       const o = opts || {};
@@ -295,8 +268,6 @@
     }
     GK.navTo = navTo;
 
-    /* ↑/↓ and j/k: one sector at a time, but a panel taller than the viewport is
-       read through first (≈85% of a screen per press). */
     function glide(y) { GK.sfx('tick'); tweenTo(y); }
     function hop(dir) {
       const list = GK.scroll.panels();
@@ -331,7 +302,7 @@
       education: { word: 'Education', alt: 'photo', doc: false },
       internship: { word: 'Deployment', alt: 'certificate', doc: true },
     };
-    const aspects = Object.create(null);   // item id → natural aspect, learnt as files load
+    const aspects = Object.create(null);
     const bf = {
       root: ensure('briefing', 'briefing', true), built: false,
       item: null, list: [], index: 0, from: null,
@@ -389,7 +360,7 @@
       if (topLayer() !== 'modal') return;
       if (e.key === 'Tab') { trapTab(e, bf.panel); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || GK.util.isTyping(e)) return;
-      if (e.target && e.target.tagName === 'VIDEO') return;     // arrows seek the footage
+      if (e.target && e.target.tagName === 'VIDEO') return;
       if (e.key === 'ArrowRight') { e.preventDefault(); cycle(1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); cycle(-1); }
     }
@@ -401,7 +372,6 @@
       return [item];
     }
 
-    /* wide documents and panoramas sit above the copy; everything else beside it */
     function applyAspect(ar, isDoc, hasMedia) {
       const a = clamp(ar || 1.6, 0.4, 3.2);
       bf.panel.style.setProperty('--ar', a.toFixed(4));
@@ -413,11 +383,10 @@
       const v = bf.video;
       if (!v) return;
       bf.video = null;
-      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (err) { /* already torn down */ }
+      try { v.pause(); v.removeAttribute('src'); v.load(); } catch (err) {}
       if (v.parentNode) { v.parentNode.classList.remove('is-playing'); v.parentNode.removeChild(v); }
       if (bf.playing) { bf.playing = false; bus.emit('media:stop'); }
     }
-    /* the <video> is created only on this press: nothing is fetched before it */
     function playVideo() {
       const item = bf.item;
       const frame = qs('.briefing-frame', bf.media);
@@ -442,7 +411,7 @@
       frame.appendChild(v);
       v.src = item.video;
       const started = v.play();
-      if (started && started.catch) started.catch(() => { /* the visitor can still use the controls */ });
+      if (started && started.catch) started.catch(() => {});
       refocus(v);
     }
 
@@ -462,7 +431,6 @@
       bf.tags.hidden = !bf.tags.firstChild;
       if (announce) bf.live.textContent = kind.word + ' ' + (bf.index + 1) + ' of ' + n + ': ' + title;
 
-      /* actions come strictly from the data */
       const link = (href, label, icon, primary) => '<a class="btn' + (primary ? ' btn-primary' : '') + '" href="' + esc(href) + '" target="_blank" rel="noopener" data-spot><span>' + label + '</span>' + icon + '</a>';
       let acts = '';
       if (item.download) acts += link(item.download, 'Download', ICON.down, true);
@@ -479,7 +447,7 @@
 
       const frame = el('div', { class: 'briefing-frame' });
       if (item.image) {
-        if (item.thumb) {                    // already cached by the lists: instant placeholder
+        if (item.thumb) {
           const ph = el('img', { class: 'briefing-thumb', src: item.thumb, alt: '', decoding: 'async' });
           ph.addEventListener('load', () => {
             if (token === bf.token && !aspects[item.id] && ph.naturalHeight) applyAspect(ph.naturalWidth / ph.naturalHeight, kind.doc, true);
@@ -508,7 +476,6 @@
       box.appendChild(frame);
     }
 
-    /* the panel grows from wherever it was opened */
     function aimEntrance(from) {
       let origin = '50% 50%';
       if (from && from.getBoundingClientRect && !env.reduced && !env.mobile) {
@@ -526,7 +493,7 @@
       bf.index = Math.max(0, bf.list.indexOf(item));
       clearTimeout(bf.swapTimer);
       bf.root.classList.remove('is-swapping');
-      if (modal.isOpen) {                    // already open: swap the entry in place
+      if (modal.isOpen) {
         renderBriefing(item, true);
         bf.scroll.scrollTop = 0;
         bus.emit('modal:open', { item });
@@ -544,7 +511,7 @@
       renderBriefing(item, false);
       bf.scroll.scrollTop = 0;
       aimEntrance(bf.from);
-      void bf.root.offsetWidth;              // commit the closed state so the entrance transition runs
+      void bf.root.offsetWidth;
       bf.root.classList.add('is-open');
       doc.addEventListener('keydown', onBriefingKey);
       GK.sfx('open');
@@ -614,6 +581,12 @@
       (d.internships || []).forEach(x => add('Records', 'record', x.title, 'Deployment · ' + (x.org || ''), [x.org, x.place, 'internship'].concat(x.tags || []).join(' '), brief(x)));
       (d.certs || []).forEach(x => add('Records', 'record', x.title, 'Certificate · ' + (x.meta || ''), [x.short, 'certification credential'].concat(x.tags || []).join(' '), brief(x)));
 
+      add('Systems', 'sector', 'Cycle Cosmos Shader Mode', () => (GK.cosmos && GK.cosmos.getModeName ? GK.cosmos.getModeName() : 'Standard'), 'cosmos shader nebula black hole visual mode', () => { if (GK.cosmos && GK.cosmos.cycleMode) GK.cosmos.cycleMode(); }, { keep: true, kbd: 'V' });
+      add('Systems', 'sector', 'Cycle Render Quality Tier', () => 'Tier ' + state.quality, 'render quality tier performance fps webgl', () => { if (GK.cosmos && GK.cosmos.cycleQuality) GK.cosmos.cycleQuality(); }, { keep: true });
+      add('Systems', 'mission', 'Toggle Missions Layout (Table / Bento)', 'Sector 04', 'bento grid table layout work view', () => {
+        if (GK.toggleMissionView) GK.toggleMissionView();
+        navTo(4);
+      });
       add('Systems', 'music', 'Toggle music', onOff('isMusicOn'), 'audio score soundtrack mute', () => { if (GK.audio && GK.audio.toggleMusic) GK.audio.toggleMusic(); }, { keep: true, kbd: 'M' });
       add('Systems', 'sfx', 'Toggle sound effects', onOff('isSfxOn'), 'audio sfx interface sounds mute', () => { if (GK.audio && GK.audio.toggleSfx) GK.audio.toggleSfx(); }, { keep: true });
       add('Systems', 'write', 'Write a message', 'Contact form', 'contact hire email form project', () => navTo(LAST, {
@@ -623,14 +596,21 @@
             msg.value = d.contact.prefill;
             msg.dispatchEvent(new Event('input', { bubbles: true }));
           }
-          if (name) { try { name.focus(); } catch (err) { /* field not focusable yet */ } }
+          if (name) { try { name.focus(); } catch (err) {} }
         },
       }));
       if (typeof d.mailto === 'function') add('Systems', 'mail', 'Open mail app', d.person ? d.person.email : '', 'email mailto contact', () => { window.location.href = d.mailto(); });
       (d.social || []).forEach(x => add('Systems', 'ext', x.name, x.handle, 'social profile link', () => { window.open(x.url, '_blank', 'noopener'); }));
 
       add('Classified', 'lock', 'Secret panel', 'Restricted', 'easter egg hidden', () => GK.openSecret('console'));
-      add('Classified', 'game', 'Asteroid Run', 'Mini-game', 'play game arcade', () => GK.openGame(), { kbd: 'G' });
+      add('Classified', 'game', 'Explorer Field Objectives', '7 hidden anomalies', 'quests achievements log missions', () => GK.openLog(), { kbd: 'Q' });
+      add('Classified', 'game', 'Asteroid Run DX', 'Arcade shooter', 'play game arcade', () => GK.openGame('asteroid'), { kbd: 'G' });
+      add('Classified', 'sector', 'Orbital Slingshot', 'Gravity physics game', 'play game gravity golf slingshot orbit', () => GK.openGame('slingshot'));
+      add('Classified', 'game', 'Summon Meteor Shower', 'Cosmic anomaly', 'meteor shower stars supernova', () => {
+        if (GK.cosmos && GK.cosmos.shower) GK.cosmos.shower(4.5);
+        GK.sfx('discover');
+        GK.toast('Meteor Shower Summoned', { tone: 'ok' });
+      });
       return out;
     }
 
@@ -642,7 +622,7 @@
         '<div class="console-veil" data-console="close" data-cursor="Close" data-sfx="none" data-sfx-hover="none"></div>' +
         '<div class="console-panel" role="dialog" aria-modal="true" aria-label="Ship console" tabindex="-1">' +
           '<div class="console-head">' +
-            '<span class="console-prompt hud-label" aria-hidden="true">GK-01' + ICON.chev + '</span>' +
+            '<span class="console-prompt hud-label" aria-hidden="true">GK-06' + ICON.chev + '</span>' +
             '<input class="console-input" id="consoleInput" type="text" role="combobox" aria-expanded="true" aria-controls="consoleList" aria-autocomplete="list" aria-label="Search sectors, missions and commands" placeholder="Search sectors, missions, commands" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" />' +
             '<button type="button" class="console-close" data-console="close" data-sfx="none" aria-label="Close console"><kbd>Esc</kbd></button>' +
           '</div>' +
@@ -664,7 +644,6 @@
         const row = t.closest('.console-row');
         if (row) runRow(parseInt(row.dataset.i, 10));
       });
-      /* pointermove, not mouseover: rows sliding under a resting pointer must not steal the selection */
       cs.list.addEventListener('pointermove', e => {
         const row = e.target.closest ? e.target.closest('.console-row') : null;
         if (!row) return;
@@ -689,7 +668,6 @@
       }
     }
 
-    /* subsequence match; contiguous runs and word starts score higher. Returns { score, pos[] } or null. */
     const wordStart = (t, i) => i === 0 || ' -—·/#&+.'.indexOf(t.charAt(i - 1)) > -1;
     function match(q, text) {
       const t = text.toLowerCase(), needle = q.replace(/\s+/g, '');
@@ -733,7 +711,7 @@
         if (q) {
           const m = match(q, cmd.label);
           if (m) { score = m.score + 12; pos = m.pos; }
-          else {                             // fall back to whole words in the hint / keywords
+          else {
             const blob = (cmd.group + ' ' + hintOf(cmd) + ' ' + cmd.keys).toLowerCase();
             if (!tokens.every(tok => blob.indexOf(tok) > -1)) return;
           }
@@ -794,13 +772,12 @@
       if (!row) return;
       const cmd = row.cmd;
       GK.sfx('click');
-      if (cmd.keep) { cmd.run(); renderList(true); return; }   // toggles stay open so the new state is visible
+      if (cmd.keep) { cmd.run(); renderList(true); return; }
       const from = cs.from;
       closeConsole(true);
       cmd.run(from);
     }
 
-    /* on touch devices the sheet lifts above the on-screen keyboard */
     function watchKeyboard() {
       const vv = window.visualViewport;
       if (!vv || env.fine) return;
@@ -830,12 +807,12 @@
       cs.list.scrollTop = 0;
       cs.list.classList.add('is-fresh');
       cs.freshTimer = setTimeout(() => cs.list.classList.remove('is-fresh'), 700);
-      void cs.root.offsetWidth;              // commit the closed state so the entrance transition runs
+      void cs.root.offsetWidth;
       cs.root.classList.add('is-open');
       doc.addEventListener('keydown', onConsoleKey);
       GK.sfx('open');
       bus.emit('overlay:open', { name: 'palette' });
-      refocus(env.fine ? cs.input : cs.panel);   // no surprise keyboard on touch: tap the field to type
+      refocus(env.fine ? cs.input : cs.panel);
       watchKeyboard();
     }
 
@@ -866,7 +843,7 @@
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
     let lastY = window.scrollY, dir = 0, hold = 0, coolUntil = 0, whK = -1, whPct = -1;
-    let endKey = false;             // arrived with the End key: no loop until the visitor moves up again
+    let endKey = false;
     function loopToOrigin() {
       if (flow.busy) return;
       closeOwnLayers();
@@ -876,6 +853,7 @@
       coolUntil = state.time + 3;
       const arrive = () => focusHeading({ id: SECTORS[0].id });
       if (window.scrollY < 2) { arrive(); return; }
+      if (GK.unlockObjective) GK.unlockObjective('wormhole-jumper');
       jump(0, { dur: 1200, loop: true, done: arrive });
     }
     if (wormhole) {
@@ -890,7 +868,6 @@
       if (!wormhole) return;
       const w = s.wormhole;
 
-      /* honest readout + the "falling in" scale of the closing line */
       const k = env.reduced || w <= 0 ? 0 : clamp((y - whTop) / Math.max(1, whH - env.h));
       if (k !== whK && (Math.abs(k - whK) > 0.003 || k === 0 || k === 1)) {
         whK = k;
@@ -903,8 +880,6 @@
         if (pctEl) pctEl.textContent = pad(pct) + '%';
       }
 
-      /* the loop: only after the visitor scrolled here themselves, kept going
-         down and stayed at the very end for a moment. Never with reduced motion. */
       if (env.reduced || !s.entered || flow.busy || stack.length) { hold = 0; return; }
       if (w < ARM_BELOW) { loopArmed = true; hold = 0; return; }
       if (loopArmed && !endKey && w >= LOOP_AT && dir === 1 && s.time >= coolUntil) {
@@ -919,7 +894,19 @@
         case 'palette': palette.toggle({ from: src }); return true;
         case 'music': if (GK.audio && GK.audio.toggleMusic) GK.audio.toggleMusic(); return true;
         case 'sfx': if (GK.audio && GK.audio.toggleSfx) GK.audio.toggleSfx(); return true;
+        case 'cosmos-mode':
+          if (GK.cosmos && GK.cosmos.cycleMode) {
+            const modeName = GK.cosmos.cycleMode();
+            const lbl = doc.getElementById('cosmosModeLabel');
+            if (lbl) lbl.textContent = modeName.split(' ')[0];
+          }
+          if (GK.unlockObjective && state.sector === 0) GK.unlockObjective('event-horizon');
+          return true;
+        case 'quality':
+          if (GK.cosmos && GK.cosmos.cycleQuality) GK.cosmos.cycleQuality();
+          return true;
         case 'game': GK.openGame(); return true;
+        case 'log': GK.openLog(); return true;
         case 'secret': GK.openSecret('action'); return true;
         case 'top': navTo(0); return true;
         default: return false;
@@ -951,14 +938,14 @@
       const typing = GK.util.isTyping(e);
       const k = key.length === 1 ? key.toLowerCase() : key;
 
-      if (flow.busy) {                       // mid-jump: Esc fast-forwards, the rest waits
+      if (flow.busy) {
         if (key === 'Escape') { e.preventDefault(); fastForward(); }
         else if (!mod && !typing && SCROLL_KEYS[key]) e.preventDefault();
         return;
       }
       const hopDir = mod || e.shiftKey || typing ? 0 : (key === 'ArrowDown' || k === 'j') ? 1 : (key === 'ArrowUp' || k === 'k') ? -1 : 0;
       if (tween && !hopDir) cancelTween();
-      if (key === 'End' && !typing) endKey = true;   // jumping to the end is not "falling in"
+      if (key === 'End' && !typing) endKey = true;
       if (!state.entered) return;
 
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && k === 'k') {
@@ -978,11 +965,20 @@
 
       if (k === '/') { e.preventDefault(); if (!e.repeat) palette.open(); return; }
       if (k === 'm') { if (!e.repeat && GK.audio && GK.audio.toggleMusic) GK.audio.toggleMusic(); return; }
+      if (k === 'v') {
+        if (!e.repeat && GK.cosmos && GK.cosmos.cycleMode) {
+          const modeName = GK.cosmos.cycleMode();
+          const lbl = doc.getElementById('cosmosModeLabel');
+          if (lbl) lbl.textContent = modeName.split(' ')[0];
+        }
+        return;
+      }
       if (k === 'g') { if (!e.repeat) GK.openGame(); return; }
+      if (k === 'q') { if (!e.repeat) GK.openLog(); return; }
       if (hopDir) {
         if (e.target && e.target.closest && e.target.closest(WIDGET)) return;
         e.preventDefault();
-        if (e.repeat && tween) return;       // holding the key walks sector by sector
+        if (e.repeat && tween) return;
         hop(hopDir);
       }
     });
@@ -996,7 +992,7 @@
       try {
         if (sessionStorage.getItem('gk5.protect')) return;
         sessionStorage.setItem('gk5.protect', '1');
-      } catch (err) { /* storage blocked: the in-memory flag still limits it to once */ }
+      } catch (err) {}
       GK.toast('Inspect shortcuts are switched off on this site.', { tone: 'info' });
     }
     if (PROTECT.contextMenu) {
@@ -1022,7 +1018,6 @@
       }, true);
     }
 
-    /* ───────────── start ───────────── */
     remeasure();
     function deepLink() {
       const dest = location.hash.length > 1 ? resolve(location.hash) : null;

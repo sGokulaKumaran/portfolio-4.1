@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Gokula Kumaran — Game & Full-Stack Developer</title>
+<title>Gokula Kumaran — Game &amp; Full-Stack Developer · Voyager 6.0</title>
 <meta name="description" content="Gokula Kumaran — Game & Full-Stack Developer. An interactive voyage through space: games, shaders, web and AI projects." />
 <meta name="theme-color" content="#05060A" />
 <meta property="og:type" content="website" />
@@ -16,7 +16,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2305060A'/%3E%3Ccircle cx='50' cy='50' r='15' fill='%2305060A' stroke='%23FFB454' stroke-width='5'/%3E%3Cellipse cx='50' cy='50' rx='40' ry='13' fill='none' stroke='%236C63FF' stroke-width='5' transform='rotate(-20 50 50)'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
 <style>html{background:#05060A;color:#F3F1EA}</style>
 <link rel="stylesheet" href="css/core.css" />
 <link rel="stylesheet" href="css/hud.css" />
@@ -39,7 +39,7 @@
 <div class="scroll-progress hud-in" aria-hidden="true"><i id="scrollBar"></i></div>
 
 <header class="site-header hud-in" id="siteHeader">
-  <a class="brand" href="#p0" aria-label="Gokula Kumaran — return to Origin"><span class="brand-mark">GK</span><span class="brand-sub" aria-hidden="true">Voyager / GK-01</span></a>
+  <a class="brand" href="#p0" aria-label="Gokula Kumaran — return to Origin"><span class="brand-mark">GK</span><span class="brand-sub" aria-hidden="true">Voyager / GK-06</span></a>
   <nav class="site-nav" id="siteNav" aria-label="Primary">
     <a href="#p1">Role</a>
     <a href="#p2">About</a>
@@ -60,6 +60,14 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3l4-3.5v12l-4-3.5H4z"/><path class="ico-on" d="M15 9.5a3.5 3.5 0 0 1 0 5M17.5 7a7 7 0 0 1 0 10"/><path class="ico-off" d="M15.5 9.5l5 5m0-5l-5 5"/></svg>
       </button>
     </div>
+    <button type="button" class="cosmos-btn" id="cosmosBtn" data-action="cosmos-mode" aria-label="Cycle cosmos visual mode" data-sfx="none" data-cursor="COSMOS" data-cursor-lock>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(-22 12 12)"/></svg>
+      <span id="cosmosModeLabel">Cosmos</span>
+    </button>
+    <button type="button" class="quest-btn" id="questBtn" data-action="log" aria-label="Open explorer objectives log" data-cursor="QUESTS" data-cursor-lock>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span id="questCount">0/7</span>
+    </button>
     <button type="button" class="console-btn" data-action="palette" aria-label="Open ship console" data-sfx-hover="none" data-cursor-lock>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l4 4-4 4M12.5 16H19"/></svg>
       <kbd id="consoleKey">Ctrl K</kbd>
@@ -81,6 +89,9 @@
   <ol class="chart-list" id="chartList"></ol>
   <div class="chart-foot">
     <a class="hire-btn" href="#p6">Hire me</a>
+    <button type="button" class="console-btn" data-action="game">Arcade Deck</button>
+    <button type="button" class="console-btn" data-action="log">Quests (<span id="chartQuestCount">0/7</span>)</button>
+    <button type="button" class="console-btn" data-action="cosmos-mode">Cosmos Mode</button>
     <button type="button" class="console-btn" data-action="palette">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l4 4-4 4M12.5 16H19"/></svg>
       Ship console
@@ -102,7 +113,7 @@
     <div><dt>Vel</dt><dd><span id="hudVel">0000</span> px/s</dd></div>
     <div><dt>T+</dt><dd id="hudClock">00:00</dd></div>
     <div><dt>Local</dt><dd id="hudTime">--:--</dd></div>
-    <div><dt>Render</dt><dd id="hudTier">Tier 0</dd></div>
+    <div><dt>Render</dt><dd><button type="button" class="hud-tier-btn" id="hudTier" data-action="quality" data-sfx="none" data-cursor="QUALITY" aria-label="Cycle shader render tier">Tier 2</button></dd></div>
   </dl>
 </div>
 
@@ -122,7 +133,7 @@
 
 <div id="loader" class="loader" role="dialog" aria-modal="true" aria-labelledby="loaderTitle">
   <div class="loader-core">
-    <p class="loader-brand" id="loaderTitle">Voyager OS · GK-01</p>
+    <p class="loader-brand" id="loaderTitle">Voyager OS · GK-06</p>
     <ol class="loader-log" id="loaderLog" aria-hidden="true"></ol>
     <div class="loader-meter" aria-hidden="true"><span class="loader-bar"><i id="loaderBar"></i></span><span class="loader-pct" id="loaderPct">000</span></div>
     <div class="loader-go" id="loaderGo">
@@ -136,7 +147,6 @@
 <!-- @hud END -->
 
 <!-- @flow BEGIN — owner: flow.js / flow.css · mission-briefing modal, command palette, hyperspace flash overlay -->
-<!-- fixed roots only: flow.js builds the interiors on first use (and re-creates a root if it is missing) -->
 <div class="flow-flash" id="flash" aria-hidden="true"></div>
 <div class="briefing" id="briefing" hidden></div>
 <div class="console" id="console" hidden></div>
@@ -148,7 +158,7 @@
   <section class="panel panel-hero" id="p0" data-sector="0" aria-labelledby="heroName">
     <div class="panel-inner hero">
       <p class="hero-eyebrow hud-label" data-reveal data-delay="1500"><span class="dot" aria-hidden="true"></span><span id="heroAvail">Available for projects · Q4 2026</span></p>
-      <h1 class="hero-name" id="heroName" aria-label="Gokula Kumaran">
+      <h1 class="hero-name" id="heroName" aria-label="Gokula Kumaran" data-cursor="DBL-CLICK · PULSE">
         <span class="hero-row hero-row-1" aria-hidden="true">Gokula</span>
         <span class="hero-row hero-row-2" aria-hidden="true">Kumaran</span>
       </h1>
@@ -161,8 +171,10 @@
       <ul class="hero-shortcuts hud-label legible" data-reveal="fade" data-delay="2100" aria-label="Keyboard shortcuts">
         <li><button type="button" class="hero-key" data-action="palette" data-cursor="OPEN"><kbd data-mod>Ctrl</kbd><kbd>K</kbd><span>console</span></button></li>
         <li><button type="button" class="hero-key" data-action="music" data-cursor="TOGGLE"><kbd>M</kbd><span>music</span></button></li>
+        <li><button type="button" class="hero-key" id="singularityBtn" data-action="cosmos-mode" data-cursor="COSMOS"><kbd>V</kbd><span>cosmos</span></button></li>
         <li><a class="hero-key" href="#p1" data-cursor="NEXT" aria-label="Navigate to the next sector"><kbd>↑</kbd><kbd>↓</kbd><span>navigate</span></a></li>
         <li><button type="button" class="hero-key" data-action="game" data-cursor="PLAY"><kbd>G</kbd><span>play</span></button></li>
+        <li><button type="button" class="hero-key" data-action="log" data-cursor="QUESTS"><kbd>Q</kbd><span>quests</span></button></li>
       </ul>
     </div>
     <div class="scroll-hint hud-label legible" aria-hidden="true"><span>Scroll</span><i></i></div>
@@ -251,7 +263,6 @@
         <h2 class="sec-title" id="workTitle" data-split="words">Selected work</h2>
         <p class="sec-meta" id="workMeta" data-reveal data-delay="100">06 projects · click to open</p>
       </header>
-      <!-- voyage-c.js renders <ol class="missions"> here from GK.data.projects -->
       <div class="work-list" id="workList"></div>
     </div>
   </section>
@@ -262,7 +273,6 @@
     <div class="panel-inner">
       <div class="sec-kicker" data-reveal><span class="sec-num">05</span><i></i><span data-decode>Telemetry</span><span class="metrics-plain" aria-hidden="true">Stats</span></div>
       <h2 class="sr-only" id="metricsTitle">Stats</h2>
-      <!-- voyage-c.js renders four <li class="gauge"> here from GK.data.metrics -->
       <ul class="metrics-grid" id="metricsGrid" data-reveal-group="90"></ul>
     </div>
   </section>
@@ -277,7 +287,6 @@
         <p class="sec-meta" id="internMeta" data-reveal data-delay="100">02 experiences · certificates on file</p>
         <p class="sec-lede" data-reveal data-delay="200">Real-world exposure to <b>production codebases</b>, deadlines, and the kind of feedback you only get when your work ships to actual users.</p>
       </header>
-      <!-- voyage-c.js renders two <article class="deploy"> here from GK.data.internships -->
       <div class="intern-list" id="internList"></div>
     </div>
   </section>
@@ -413,19 +422,51 @@
   </article>
 </div>
 
-<div class="game" id="game" role="dialog" aria-modal="true" aria-label="Asteroid Run mini-game" hidden>
+<div class="quests" id="quests" role="dialog" aria-modal="true" aria-labelledby="questsTitle" hidden>
+  <div class="quests-veil" data-quests-close></div>
+  <article class="quests-card">
+    <button class="secret-close" type="button" data-quests-close aria-label="Close explorer log"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+    <p class="hud-label quests-meta">// voyager_field_objectives.log · <span id="questsProgressLabel">0 / 7 discovered</span></p>
+    <h2 class="quests-title" id="questsTitle">Explorer <em>Field Objectives</em></h2>
+    <p class="quests-sub">Discover interactive anomalies hidden across the 10 sectors of the voyage. Click any objective to jump to its sector.</p>
+    <div class="quests-bar" aria-hidden="true"><i id="questsBarFill"></i></div>
+    <ol class="quests-list" id="questsList"></ol>
+    <div class="quests-foot">
+      <button class="btn btn-primary" type="button" data-quests-play data-sfx="none">Open Arcade Deck <span class="arrow" aria-hidden="true">▸</span></button>
+      <button class="btn" type="button" id="questsRewardBtn" data-quests-reward hidden>Summon Supernova Shower ✦</button>
+      <span class="hud-label"><kbd>Q</kbd> or <kbd>Esc</kbd> close</span>
+    </div>
+  </article>
+</div>
+
+<div class="game" id="game" role="dialog" aria-modal="true" aria-label="Voyager Arcade Deck" hidden>
   <canvas class="game-canvas" tabindex="-1" aria-hidden="true"></canvas>
-  <div class="game-hud hud-label" aria-hidden="true">
-    <span>Score<b data-g="score">00000</b></span>
-    <span>Best<b data-g="best">00000</b></span>
-    <span>Shields<b data-g="shields">◆◆◆</b></span>
+  <div class="game-top">
+    <div class="game-tabs" role="tablist" aria-label="Select arcade game">
+      <button type="button" class="game-tab is-active" data-game-mode="asteroid" role="tab" aria-selected="true">01 · Asteroid Run DX</button>
+      <button type="button" class="game-tab" data-game-mode="slingshot" role="tab" aria-selected="false">02 · Orbital Slingshot</button>
+    </div>
+    <div class="game-hud hud-label" aria-hidden="true">
+      <span>Score<b data-g="score">00000</b></span>
+      <span>Best<b data-g="best">00000</b></span>
+      <span data-g-wrap="shields">Shields<b data-g="shields">◆◆◆</b></span>
+      <span data-g-wrap="emp">EMP<b data-g="emp">READY</b></span>
+    </div>
   </div>
   <button class="game-close" type="button" data-game-close aria-label="Close game"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
+  <div class="game-touch" id="gameTouchControls" aria-hidden="true">
+    <button type="button" class="gt-btn" data-gt="left">◄ Thrust L</button>
+    <button type="button" class="gt-btn gt-emp" data-gt="emp">⚡ EMP Nova</button>
+    <button type="button" class="gt-btn" data-gt="right">Thrust R ►</button>
+  </div>
   <div class="game-panel">
-    <p class="hud-label">Arcade · hidden level</p>
-    <h2 class="game-title">Asteroid Run</h2>
+    <p class="hud-label" data-g="kicker">Arcade · Cartridge 01</p>
+    <h2 class="game-title">Asteroid Run DX</h2>
     <p class="game-sub"></p>
-    <button class="btn btn-primary" type="button" data-game-start data-sfx="none">Launch</button>
+    <div class="game-panel-actions">
+      <button class="btn btn-primary" type="button" data-game-start data-sfx="none">Launch Mission</button>
+      <button class="btn" type="button" data-game-switch data-sfx="none">Switch to Orbital Slingshot</button>
+    </div>
   </div>
 </div>
 <!-- @extras END -->

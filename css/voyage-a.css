@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · voyage-a.css
+   VOYAGER 6.0 · voyage-a.css
    Sector 0 ORIGIN (hero) and sector 1 SIGNAL (role).
    Everything is scoped under .panel-hero / .panel-role.
    ═══════════════════════════════════════════════════════════════ */
@@ -33,14 +33,13 @@
   white-space: nowrap; color: var(--ink);
   text-shadow: 0 0 40px rgba(5, 6, 10, 0.9);
   transform-origin: 50% 52%;
-  cursor: default;
+  cursor: pointer;
 }
 .panel-hero .hero-name.is-falling { will-change: transform, opacity; }
 .panel-hero .hero-row { display: block; }
 .panel-hero .hero-row-1 { font-weight: 300; letter-spacing: -0.03em; --va-track: -0.03em; }
 .panel-hero .hero-row-2 { font-weight: 700; letter-spacing: -0.045em; --va-track: -0.014em; }
 .panel-hero .hero-name.is-split .hero-row { letter-spacing: 0; }
-/* each letter owns a fixed-width slot (width set by voyage-a.js) so weight changes never reflow the line */
 .panel-hero .hero-ch {
   display: inline-block;
   margin-inline: var(--va-track, 0em);
@@ -71,7 +70,7 @@
 }
 .panel-hero .hero-coords i { flex: none; width: 28px; height: 1px; background: var(--line-2); }
 
-/* keyboard shortcuts — fine pointers only */
+/* keyboard shortcuts */
 .panel-hero .hero-shortcuts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 0.5rem; }
 .panel-hero .hero-key {
   display: inline-flex; align-items: center; gap: 0.4rem;
@@ -83,9 +82,11 @@
 .panel-hero .hero-key kbd { transition: color var(--t-2), border-color var(--t-2); }
 .panel-hero .hero-key:hover, .panel-hero .hero-key:focus-visible { color: var(--ink); background-color: rgba(255, 255, 255, 0.05); }
 .panel-hero .hero-key:hover kbd, .panel-hero .hero-key:focus-visible kbd { color: var(--ink); border-color: var(--accent); }
-html.is-coarse .panel-hero .hero-shortcuts { display: none; }
+html.is-coarse .panel-hero .hero-shortcuts { display: flex; gap: 0.45rem; }
+html.is-coarse .panel-hero .hero-key { border: 1px solid var(--line-2); background: var(--surface); padding: 0.45rem 0.75rem; }
+html.is-coarse .panel-hero .hero-key kbd { display: none; }
 
-/* scroll hint — leaves after the first scroll */
+/* scroll hint */
 .panel-hero .scroll-hint {
   position: absolute; left: 0; right: 0; bottom: clamp(0.8rem, 2.4vh, 1.5rem);
   width: max-content; margin-inline: auto;
@@ -93,7 +94,6 @@ html.is-coarse .panel-hero .hero-shortcuts { display: none; }
   color: var(--ink-2); pointer-events: none;
   transition: opacity var(--t-3) var(--ease-out), visibility 0s linear var(--t-3);
 }
-/* shown by voyage-a.js once the name has settled (it sits below the reveal observer's margin) */
 html.js .panel-hero:not(.is-hinting) .scroll-hint { opacity: 0; }
 .panel-hero.is-scrolled .scroll-hint { opacity: 0; visibility: hidden; }
 .panel-hero .scroll-hint i { position: relative; display: block; width: 1px; height: 30px; overflow: hidden; background: var(--line-2); }
@@ -152,12 +152,12 @@ html.is-reduced .panel-role .role-signal-bar { display: none; }
 
 .panel-role .role-desc { max-width: 52ch; }
 
-/* holo-planet */
+/* holo-planet (fixed duplicate CSS bug where inset:0 conflicted with top:calc(100% + 2.1rem)) */
 .panel-role .role-holo {
   --brk-inset: 0px; --brk-len: 14px;
   position: relative;
   width: min(100%, 440px); aspect-ratio: 1;
-  margin: 0 auto 2.25rem;
+  margin: 0 auto 5.2rem;
   background: radial-gradient(closest-side, rgba(var(--sector-a-rgb), 0.1), rgba(var(--sector-a-rgb), 0.03) 55%, transparent 72%);
   -webkit-user-select: none; user-select: none;
 }
@@ -168,13 +168,29 @@ html.is-reduced .panel-role .role-signal-bar { display: none; }
 }
 .panel-role .role-holo.is-over canvas { cursor: pointer; }
 .panel-role .role-holo.is-grabbing canvas { cursor: grabbing; }
-.panel-role .role-picks { position: absolute; inset: 0; pointer-events: none; }
 .panel-role .role-holo-cap {
   position: absolute; left: 0; right: 0; top: 100%;
-  margin-top: 0.85rem;
+  margin-top: 0.75rem;
   text-align: center; color: var(--ink-2); pointer-events: none;
+}
+.panel-role .role-picks {
+  position: absolute; left: -10%; right: -10%; top: calc(100% + 2.1rem); bottom: auto;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.38rem;
+  pointer-events: auto; z-index: 3;
+}
+.panel-role .role-pick {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.34rem 0.66rem; border: 1px solid var(--line);
+  border-radius: var(--radius-pill); background: var(--surface);
+  font: 500 var(--fs-micro) / 1.1 var(--font-mono); letter-spacing: 0.06em;
+  color: var(--ink-2); transition: color var(--t-2), border-color var(--t-2), background-color var(--t-2);
+}
+.panel-role .role-pick span { color: var(--sector-ink); font-size: 0.62rem; }
+.panel-role .role-pick:hover, .panel-role .role-pick[aria-pressed='true'] {
+  color: var(--ink); border-color: var(--sector-a); background: rgba(var(--sector-a-rgb), 0.16);
 }
 
 @media (max-width: 880px) {
-  .panel-role .role-holo { width: min(100%, 280px); }
+  .panel-role .role-holo { width: min(100%, 280px); margin-bottom: 6.2rem; }
+  .panel-role .role-picks { left: -16%; right: -16%; }
 }

@@ -1,16 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · voyage-a.js
+   VOYAGER 6.0 · voyage-a.js
    Sector 0 ORIGIN (hero) and sector 1 SIGNAL (role).
 
-   Hero   — the name is set in a variable font; every letter sits in
-            a fixed-width slot (measured once at the heaviest weight)
-            so its weight can follow the pointer without the line
-            ever reflowing. Scrolling away stretches the name into
-            the black hole the backdrop draws behind it.
-   Role   — a rotating point-cloud "holo-planet" whose six beacons
-            are the six roles; the text line and the planet stay in
-            sync, and hidden buttons give keyboard users the same
-            control.
+   Upgrades in 6.0:
+   - Exact bounding-box pointer coordinates on Holo-Planet (immune to
+     CSS scale reveal and pointer capture offset drift)
+   - Selecting any Role beacon/pill smoothly steers the 3D Holo-Planet
+     to center that beacon in the front hemisphere
+   - Animated telemetry packets traveling along great-circle arcs +
+     equatorial orbital satellite ring
+   - Singularity Shockwave trigger button/gesture in Hero
    ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -30,7 +29,6 @@
     if (!panel) return;
     const name = byId('heroName');
 
-    /* content comes from GK.data — the markup only carries a no-JS fallback */
     setText('heroAvail', person.availability);
     setText('heroCoords', person.coords);
     setText('heroLoc', person.location);
@@ -38,9 +36,8 @@
       qsa('[data-mod]', panel).forEach(k => { k.textContent = '⌘'; });
     }
 
-    /* ── letters ── */
     const W_MIN = 200, W_MAX = 800;
-    const REST = [300, 620];           // resting weight per row: light first name, heavy surname
+    const REST = [300, 620];
     const letters = [];
     let introStarted = false;
 
@@ -61,7 +58,7 @@
           row.appendChild(el);
           letters.push({
             el, i: gi++, row: r, base,
-            u: chars.length > 1 ? i / (chars.length - 1) + r * 0.18 : 0, // position across the row, for the idle wave
+            u: chars.length > 1 ? i / (chars.length - 1) + r * 0.18 : 0,
             w: env.reduced ? base : W_MIN, last: -1, cx: 0, cy: 0, born: Infinity,
           });
         });
@@ -74,7 +71,6 @@
       l.el.style.fontVariationSettings = "'wght' " + l.last;
     };
 
-    /* document-space letter centres from offsets (unaffected by the scroll-out transform) */
     function measureLetters() {
       if (!letters.length) return;
       let bx = 0, by = 0, n = letters[0].el.offsetParent;
@@ -86,8 +82,6 @@
       }
     }
 
-    /* Lock every letter into a slot as wide as its heaviest form, so weight changes never reflow
-       the line. Widths are stored in em and therefore follow the fluid font size. */
     function lockSlots() {
       if (!letters.length) return;
       name.style.removeProperty('--va-fit');
@@ -103,7 +97,6 @@
         if (widths[i] > 0) l.el.style.width = (widths[i] / fs).toFixed(4) + 'em';
         writeWeight(l);
       });
-      /* never wider than the column, whatever font actually loaded */
       const avail = name.parentNode ? name.parentNode.clientWidth : 0;
       const widest = rowWidth.reduce((m, w) => Math.max(m, w || 0), 0);
       if (avail > 0 && widest > avail) name.style.setProperty('--va-fit', (avail / widest * 0.985).toFixed(4));
@@ -121,7 +114,6 @@
       bus.on('measure', measureLetters);
     }
 
-    /* ── intro: the name assembles as the launch warp decays ── */
     function startIntro() {
       if (introStarted) return;
       introStarted = true;
@@ -131,12 +123,10 @@
       letters.forEach(l => { l.born = t + l.i * 0.04; });
     }
     function onEnter() {
-      /* arrived by deep link somewhere else: don't make the hero wait when it is scrolled back to */
       const away = window.scrollY > env.h * 0.6;
       if (away) qsa('[data-reveal]', panel).forEach((n, i) => n.style.setProperty('--delay', i * 80));
       if (env.reduced || away) startIntro();
       else setTimeout(startIntro, 900);
-      /* the scroll hint trails everything; anything still unrevealed by then (short viewports) stops waiting */
       setTimeout(() => {
         panel.classList.add('is-hinting');
         qsa('[data-reveal]:not(.is-in)', panel).forEach(n => n.style.setProperty('--delay', 0));
@@ -144,7 +134,35 @@
     }
     if (state.entered) onEnter(); else bus.once('enter', onEnter);
 
-    /* the wormhole loop returns here: let the name re-form */
+    /* Singularity Grazer: double-click, hold on Hero Black Hole, or click the Singularity button */
+    const fireSingularity = (cx, cy) => {
+      if (GK.cosmos && GK.cosmos.ripple) GK.cosmos.ripple(cx, cy, 1.25);
+      if (GK.cosmos && GK.cosmos.flash) GK.cosmos.flash(0.35);
+      GK.sfx('gravity', { x: cx });
+      if (GK.unlockObjective) GK.unlockObjective('event-horizon');
+    };
+    if (name) {
+      let holdTimer = 0;
+      name.addEventListener('dblclick', e => {
+        fireSingularity(e.clientX || env.w / 2, e.clientY || env.h / 2);
+      });
+      name.addEventListener('pointerdown', e => {
+        clearTimeout(holdTimer);
+        const cx = e.clientX || env.w / 2, cy = e.clientY || env.h / 2;
+        holdTimer = setTimeout(() => fireSingularity(cx, cy), 680);
+      }, { passive: true });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => {
+        name.addEventListener(ev, () => clearTimeout(holdTimer), { passive: true });
+      });
+    }
+    const pulseBtn = byId('singularityBtn');
+    if (pulseBtn) {
+      pulseBtn.addEventListener('click', e => {
+        const r = pulseBtn.getBoundingClientRect();
+        fireSingularity(r.left + r.width / 2, env.h * 0.42);
+      });
+    }
+
     bus.on('loop', () => {
       if (env.reduced || !introStarted || !name || !letters.length) return;
       name.classList.remove('is-live');
@@ -154,7 +172,6 @@
       letters.forEach(l => { l.born = t + l.i * 0.04; l.w = W_MIN; });
     });
 
-    /* ── per-frame: scroll-out pull + proximity weight ── */
     let visible = true, scrolled = false, lastP = -1;
     onVisible(panel, v => { visible = v; });
 
@@ -163,7 +180,6 @@
       if (!scrolled && s.entered && s.scrollY > 24) { scrolled = true; panel.classList.add('is-scrolled'); }
       if (!name || !letters.length || env.reduced) return;
 
-      /* first 60vh of scroll: the name is drawn into the hole */
       const p = clamp(s.scrollY / Math.max(1, env.h * 0.6));
       if (Math.abs(p - lastP) > 0.0015 || (p !== lastP && (p === 0 || p === 1))) {
         lastP = p;
@@ -183,8 +199,8 @@
       if (p >= 1 || !introStarted) return;
 
       const ptr = s.pointer, t = s.time, sy = s.scrollY;
-      const wave = !env.fine || !ptr.active; // touch, or before the pointer first moves
-      const step = wave ? 10 : 6;            // coarser writes for the always-moving wave (phones)
+      const wave = !env.fine || !ptr.active;
+      const step = wave ? 10 : 6;
       for (let i = 0; i < letters.length; i++) {
         const l = letters[i];
         const age = t - l.born;
@@ -200,7 +216,7 @@
             k = q * q * (3 - 2 * q);
           }
           target = l.base + (W_MAX - l.base) * k;
-          if (age < 1.4) lambda = 3.5; // settle slowly out of the intro
+          if (age < 1.4) lambda = 3.5;
         }
         l.w = damp(l.w, target, lambda, dt);
         if (Math.abs(l.w - l.last) >= step) writeWeight(l);
@@ -208,8 +224,7 @@
     }, 11);
   }
 
-  /* ───────────────────────── sector 1 · holo-planet ─────────────────────────
-     Returns { start(), setActive(i), setFocus(i) } or null when 2D canvas is unavailable. */
+  /* ───────────────────────── sector 1 · holo-planet ───────────────────────── */
   function createHolo(GK, canvas, wrap, roles, onPick) {
     const ctx = canvas.getContext ? canvas.getContext('2d') : null;
     if (!ctx) return null;
@@ -223,7 +238,6 @@
     const FONT = '500 11px ' + token('--font-mono', 'monospace');
     const HAS_SPACING = 'letterSpacing' in ctx;
 
-    /* point cloud: Fibonacci sphere */
     const N = env.mobile ? 420 : 900;
     const PERSP = 0.16, BASE_PITCH = 0.32, SPIN = 0.12;
     const pts = new Float32Array(N * 3), lag = new Float32Array(N);
@@ -232,24 +246,27 @@
     for (let i = 0; i < N; i++) {
       const y = 1 - (2 * i + 1) / N, r = Math.sqrt(1 - y * y), th = i * GOLDEN;
       pts[i * 3] = Math.cos(th) * r; pts[i * 3 + 1] = y; pts[i * 3 + 2] = Math.sin(th) * r;
-      lag[i] = ((i * 0.6180339887) % 1) * 0.3; // staggered arrival
+      lag[i] = ((i * 0.6180339887) % 1) * 0.3;
     }
     const ALPHA = [0.14, 0.26, 0.44, 0.68, 0.95], SIZE = [1.2, 1.3, 1.5, 1.6, 1.8];
 
-    /* latitude rings */
     const SEG = 72, RING_LAT = [-0.62, 0, 0.62], DASHED = [3, 7], SOLID = [];
     const ringC = new Float32Array(SEG + 1), ringS = new Float32Array(SEG + 1);
     for (let s = 0; s <= SEG; s++) { ringC[s] = Math.cos(s / SEG * TAU); ringS[s] = Math.sin(s / SEG * TAU); }
 
-    /* beacons: one per role */
     const LAT = [26, -30, 44, -12, 10, -46];
     const beacons = roles.map((label, i) => {
       const lat = LAT[i % LAT.length] * Math.PI / 180, lon = i / roles.length * TAU;
-      return { x: Math.cos(lat) * Math.cos(lon), y: Math.sin(lat), z: Math.cos(lat) * Math.sin(lon), label: String(label).toUpperCase(), sx: 0, sy: 0, sz: 0, tw: 0 };
+      return {
+        lat, lon,
+        x: Math.cos(lat) * Math.cos(lon), y: Math.sin(lat), z: Math.cos(lat) * Math.sin(lon),
+        label: String(label).toUpperCase(), sx: 0, sy: 0, sz: 0, tw: 0,
+      };
     });
 
     let W = 0, H = 0, kx = 1, ky = 1, cx = 0, cy = 0, R = 0, small = false, ready = false, stale = true;
     let yaw = 0.6, pitch = BASE_PITCH, vyaw = 0, vpitch = 0, spin = 1;
+    let steerYaw = null, steerPitch = null, steerTimer = 0;
     let started = false, converged = env.reduced, t0 = 0;
     let visible = false, dirty = true, dirtyUntil = 0, drawn = false, nextFit = 0;
     let active = 0, focus = -1, hover = -1, actT = 1, burst = 1, ax = null, ay = 0;
@@ -258,7 +275,6 @@
 
     function fit() {
       const f = fitCanvas(canvas, 1.5);
-      /* client size ignores the reveal's scale animation; the backing store may lag it by a few % */
       W = canvas.clientWidth || f.w; H = canvas.clientHeight || f.h;
       ready = W > 2 && H > 2;
       if (!ready) return;
@@ -268,13 +284,20 @@
       stale = true; dirty = true; ax = null;
     }
 
+    function localPos(e) {
+      const r = canvas.getBoundingClientRect();
+      const sx = r.width > 0 ? W / r.width : 1;
+      const sy = r.height > 0 ? H / r.height : 1;
+      return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+    }
+
     function hit(x, y, radius) {
       let best = -1, bd = radius * radius;
-      if (!drawn) return best; // beacon positions are only known after the first frame
+      if (!drawn) return best;
       for (let i = 0; i < beacons.length; i++) {
         const b = beacons[i], dx = b.sx - x, dy = b.sy - y;
         let d = dx * dx + dy * dy;
-        if (b.sz < 0) d *= 1.6; // far-side beacons are harder to grab than near ones
+        if (b.sz < 0) d *= 1.6;
         if (d < bd) { bd = d; best = i; }
       }
       return best;
@@ -291,20 +314,29 @@
           vpitch = clamp(damp(vpitch, dyr / dt, 20, dt), -6, 6);
         }
         spin = 0;
+        steerTimer = 0;
       } else if (dt > 0) {
-        const f = Math.pow(0.94, dt * 60);
-        vyaw *= f; vpitch *= f;
-        spin = damp(spin, 1, 1.2, dt);
-        yaw += (vyaw + SPIN * spin) * dt;
-        pitch = clamp(pitch + vpitch * dt, -1.15, 1.15);
-        pitch = damp(pitch, BASE_PITCH, 0.35, dt);
+        if (steerTimer > 0 && steerYaw !== null) {
+          steerTimer -= dt;
+          let dyaw = ((steerYaw - yaw + Math.PI) % TAU + TAU) % TAU - Math.PI;
+          yaw += dyaw * (1 - Math.exp(-6.5 * dt));
+          pitch = damp(pitch, steerPitch, 6.5, dt);
+          vyaw = 0; vpitch = 0; spin = 0.15;
+        } else {
+          const f = Math.pow(0.94, dt * 60);
+          vyaw *= f; vpitch *= f;
+          spin = damp(spin, 1, 1.2, dt);
+          yaw += (vyaw + SPIN * spin) * dt;
+          pitch = clamp(pitch + vpitch * dt, -1.15, 1.15);
+          pitch = damp(pitch, BASE_PITCH, 0.35, dt);
+        }
       }
       if (actT < 1) actT = Math.min(1, actT + dt / 0.3);
       if (burst < 1) burst = Math.min(1, burst + dt / 0.7);
     }
 
     function plate(b, x, y, alpha, strong) {
-      ctx.globalAlpha = alpha * 0.8;
+      ctx.globalAlpha = alpha * 0.84;
       ctx.fillStyle = BG;
       ctx.fillRect(x - 5, y - 9, b.tw + 10, 18);
       ctx.globalAlpha = alpha;
@@ -325,8 +357,28 @@
       const col = 'rgb(' + Math.round(pa[0] * 255) + ',' + Math.round(pa[1] * 255) + ',' + Math.round(pa[2] * 255) + ')';
       const cosY = Math.cos(yaw), sinY = Math.sin(yaw), cosP = Math.cos(pitch), sinP = Math.sin(pitch);
 
-      /* latitude rings (yaw-invariant; the dash offset carries the rotation) */
+      /* outer orbital telemetry ring */
       if (late > 0) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-0.22);
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = 0.18 * late;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 8]);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, R * 1.28, R * 0.38, 0, 0, TAU);
+        ctx.stroke();
+        ctx.setLineDash(SOLID);
+        if (!env.reduced) {
+          const satA = time * 0.55;
+          const sx = Math.cos(satA) * R * 1.28, sy = Math.sin(satA) * R * 0.38;
+          ctx.globalAlpha = 0.85 * late;
+          ctx.fillStyle = FOCUS;
+          ctx.beginPath(); ctx.arc(sx, sy, 2.4, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+
         const rr = R * 1.05;
         ctx.strokeStyle = col; ctx.lineWidth = 1;
         for (let k = 0; k < RING_LAT.length; k++) {
@@ -397,6 +449,35 @@
         b.sx = cx + x1 * m; b.sy = cy - y2 * m; b.sz = z2;
       }
       drawn = true;
+
+      /* Great-circle data arcs + traveling telemetry packets */
+      ctx.save();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < beacons.length; i++) {
+        const a = beacons[i], b = beacons[(i + 1) % beacons.length];
+        if (a.sz < -0.15 && b.sz < -0.15) continue;
+        const vis = clamp((a.sz + b.sz + 0.6) * 0.45, 0.06, 0.34) * late;
+        ctx.globalAlpha = vis;
+        const mxp = (a.sx + b.sx) * 0.5 + (cx - (a.sx + b.sx) * 0.5) * -0.18;
+        const myp = (a.sy + b.sy) * 0.5 + (cy - (a.sy + b.sy) * 0.5) * -0.18;
+        ctx.beginPath();
+        ctx.moveTo(a.sx, a.sy);
+        ctx.quadraticCurveTo(mxp, myp, b.sx, b.sy);
+        ctx.stroke();
+
+        if (!env.reduced && vis > 0.12) {
+          const u = (time * 0.45 + i * 0.21) % 1;
+          const iu = 1 - u;
+          const px = iu * iu * a.sx + 2 * iu * u * mxp + u * u * b.sx;
+          const py = iu * iu * a.sy + 2 * iu * u * myp + u * u * b.sy;
+          ctx.globalAlpha = vis * 2.2;
+          ctx.fillStyle = INK;
+          ctx.beginPath(); ctx.arc(px, py, 1.8, 0, TAU); ctx.fill();
+        }
+      }
+      ctx.restore();
+
       ctx.font = FONT; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       if (HAS_SPACING) ctx.letterSpacing = '0.08em';
       if (stale) { beacons.forEach(b => { b.tw = ctx.measureText(b.label).width; }); stale = false; }
@@ -460,25 +541,26 @@
       ctx.globalAlpha = 1;
     }
 
-    /* ── pointer: drag to rotate, tap a beacon to select ── */
     canvas.addEventListener('pointerdown', e => {
       if (e.button) return;
       dragging = true; pid = e.pointerId;
       lastX = e.clientX; lastY = e.clientY; dragDX = 0; dragDY = 0; travel = 0; downT = performance.now();
-      mx = e.offsetX; my = e.offsetY; ptrIn = true;
-      try { canvas.setPointerCapture(pid); } catch (err) { /* pointer already gone */ }
+      const pt = localPos(e);
+      mx = pt.x; my = pt.y; ptrIn = true;
+      try { canvas.setPointerCapture(pid); } catch (err) {}
       wrap.classList.add('is-grabbing');
       dirty = true;
     });
     canvas.addEventListener('pointermove', e => {
-      mx = e.offsetX; my = e.offsetY;
+      const pt = localPos(e);
+      mx = pt.x; my = pt.y;
       if (dragging && e.pointerId === pid) {
         const dx = e.clientX - lastX, dy = e.clientY - lastY;
         lastX = e.clientX; lastY = e.clientY;
         dragDX += dx; dragDY += dy; travel += Math.abs(dx) + Math.abs(dy);
       } else if (e.pointerType !== 'touch') {
         ptrIn = true;
-        const h = hit(mx, my, 20);
+        const h = hit(mx, my, 22);
         if (h !== hover) { hover = h; wrap.classList.toggle('is-over', h > -1); }
       }
       dirty = true;
@@ -487,12 +569,13 @@
       if (!dragging || e.pointerId !== pid) return;
       dragging = false;
       wrap.classList.remove('is-grabbing');
-      try { canvas.releasePointerCapture(pid); } catch (err) { /* already released */ }
+      try { canvas.releasePointerCapture(pid); } catch (err) {}
       const touch = e.pointerType === 'touch';
       if (touch) ptrIn = false;
       if (env.reduced) { vyaw = 0; vpitch = 0; }
-      if (!cancelled && travel < 7 && performance.now() - downT < 600) {
-        const h = hit(e.offsetX, e.offsetY, touch ? 30 : 22);
+      if (!cancelled && travel < 8 && performance.now() - downT < 600) {
+        const pt = localPos(e);
+        const h = hit(pt.x, pt.y, touch ? 32 : 24);
         if (h > -1) onPick(h);
       }
       dirty = true;
@@ -506,17 +589,16 @@
       dirty = true;
     });
 
-    /* ── lifecycle ── */
     fit();
     onVisible(canvas, v => { visible = v; if (v) dirty = true; });
     bus.on('resize', fit);
     bus.on('measure', () => { if (canvas.clientWidth !== W || canvas.clientHeight !== H) fit(); });
-    bus.on('sector', () => { dirtyUntil = state.time + 3; }); // let a static frame follow the palette cross-fade
+    bus.on('sector', () => { dirtyUntil = state.time + 3; });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { stale = true; dirty = true; }).catch(() => {});
 
     GK.ticker.add((s, dt) => {
       if (!visible || !started || s.paused) return;
-      if (!ready) { // box had no size yet: retry at most once a second
+      if (!ready) {
         if (s.time < nextFit) return;
         nextFit = s.time + 1;
         fit();
@@ -539,10 +621,18 @@
         started = true;
         t0 = state.time + (env.reduced ? 0 : delay || 0);
         dirty = true;
-        setTimeout(fit, 1500); // once the reveal's scale has settled, size the backing store exactly
+        setTimeout(fit, 1500);
       },
-      setActive(i) {
-        if (i === active || !beacons[i]) return;
+      setActive(i, manual) {
+        if (!beacons[i]) return;
+        const b = beacons[i];
+        if (manual && !env.reduced) {
+          /* steer globe so beacon (lon, lat) faces forward (+z) */
+          steerYaw = Math.PI / 2 - b.lon - 0.22;
+          steerPitch = clamp(b.lat * 0.55 + 0.15, -0.75, 0.75);
+          steerTimer = 1.6;
+        }
+        if (i === active) { dirty = true; return; }
         active = i; actT = env.reduced ? 1 : 0; burst = env.reduced ? 1 : 0; ax = null; dirty = true;
       },
       setFocus(i) { focus = i; dirty = true; },
@@ -567,8 +657,9 @@
     if (list) list.innerHTML = roles.map(r => '<li>' + esc(r) + '</li>').join('');
     if (picks) {
       picks.innerHTML = roles.map((r, i) =>
-        '<button type="button" class="role-pick sr-only" data-role="' + i + '" data-sfx="none" data-sfx-hover="none" aria-pressed="' + (i === 0) + '">' + esc(r) + '</button>').join('');
+        '<button type="button" class="role-pick" data-role="' + i + '" data-sfx="none" data-sfx-hover="none" aria-pressed="' + (i === 0) + '"><span>' + pad(i + 1) + '</span>' + esc(r) + '</button>').join('');
     }
+    const visitedRoles = new Set([0]);
     const pickBtns = picks ? qsa('.role-pick', picks) : [];
     if (typed) typed.textContent = roles[0];
     const label = i => pad(i + 1) + ' / ' + pad(n);
@@ -577,15 +668,19 @@
     let holo = null;
     function setRole(i, manual) {
       current = ((i % n) + n) % n;
-      timer = manual ? -4 : 0; // a manual choice holds for a while before the cycle resumes
+      timer = manual ? -4.5 : 0;
       if (typed) {
         if (GK.fx && GK.fx.decode) GK.fx.decode(typed, roles[current]);
         else typed.textContent = roles[current];
       }
       if (count) count.textContent = label(current);
       pickBtns.forEach((b, k) => b.setAttribute('aria-pressed', k === current ? 'true' : 'false'));
-      if (holo) holo.setActive(current);
-      if (manual) GK.sfx('ping', { i: current });
+      if (holo) holo.setActive(current, !!manual);
+      if (manual) {
+        GK.sfx('ping', { i: current });
+        visitedRoles.add(current);
+        if (visitedRoles.size >= 3 && GK.unlockObjective) GK.unlockObjective('full-spectrum');
+      }
     }
 
     if (canvas && holoWrap) holo = createHolo(GK, canvas, holoWrap, roles, i => setRole(i, true));
@@ -602,7 +697,6 @@
       picks.addEventListener('focusout', () => { if (holo) holo.setFocus(-1); });
     }
 
-    /* start with the reveals; if fx.js is absent nothing is hidden, so start on entry */
     function goLive() {
       if (live) return;
       live = true; timer = 0;

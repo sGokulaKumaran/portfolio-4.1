@@ -1168,10 +1168,36 @@
         });
         tone(t + 0.54, { f: 90, f1: 35, ft: 0.8, g: 0.2, a: 2, d: 1200, dest: G.S });
       },
+      discover: function (t, o, pan) {
+        [[0, 5, 0], [2, 5, 0.065], [4, 5, 0.13], [6, 5, 0.195], [0, 6, 0.27]].forEach(function (n, i) {
+          bell(t + n[2], K(n[0], n[1]), { g: 0.058, tau: 0.42, dest: G.S, pan: (i - 2) * 0.22 });
+        });
+        tone(t, { f: K(0, 3), f1: K(0, 4), ft: 0.55, g: 0.045, a: 15, d: 700, dest: G.S, pan: pan });
+      },
+      gravity: function (t, o, pan) {
+        tone(t, { f: 68, f1: 31, ft: 1.1, g: 0.28, a: 12, d: 1300, dest: G.S, pan: pan });
+        tone(t, { type: 'triangle', f: K(0, 3), f1: K(4, 3), ft: 0.9, fty: 'lowpass', ff: 600, ff1: 180, fft: 0.9, g: 0.06, a: 30, d: 950, dest: G.S, pan: pan });
+        noise(t, { pink: true, fty: 'bandpass', ff: 160, ff1: 920, fft: 0.55, ff2: 140, fft2: 0.55, q: 3.5, g: 0.11, a: 40, d: 900, dest: G.S, pan: pan });
+      },
+      emp: function (t, o, pan) {
+        tone(t, { f: 150, f1: 32, ft: 0.65, g: 0.32, a: 2, d: 850, dest: G.S, pan: pan });
+        noise(t, { fty: 'bandpass', ff: 3800, ff1: 280, fft: 0.48, q: 2.2, g: 0.14, a: 2, d: 520, dest: G.S, pan: pan });
+        bell(t + 0.03, K(4, 5), { g: 0.05, tau: 0.25, dest: G.S });
+      },
+      slingshot: function (t, o, pan) {
+        const f = K(0, 4);
+        tone(t, { type: 'triangle', f: f, f1: f * 1.9, ft: 0.24, fty: 'lowpass', ff: 2200, g: 0.055, a: 4, d: 260, dest: G.W, pan: pan });
+        noise(t, { pink: true, fty: 'bandpass', ff: 800, ff1: 2400, fft: 0.22, q: 3, g: 0.04, a: 5, d: 200, dest: G.W, pan: pan });
+      },
+      relay: function (t, o, pan) {
+        const idx = clamp(Math.round(num(o.i, 0)), 0, 4);
+        bell(t, K(CH[idx], 6), { g: 0.058, tau: 0.22, dest: G.S, pan: pan });
+        bell(t + 0.05, K(CH[idx + 1], 6), { g: 0.048, tau: 0.28, dest: G.S, pan: pan });
+      },
     };
 
-    const MIN = { hover: 60, tick: 35, click: 40, toggle: 120, lock: 120, open: 200, close: 200, whoosh: 250, warp: 800, arrive: 800, success: 400, error: 300, type: 30, boot: 45, ping: 300, scan: 300, transmit: 1000, chime: 70, shoot: 70, hit: 50, explode: 120, pickup: 80, gameover: 1500 };
-    const PRIO = { hover: 0, tick: 0, type: 0, boot: 0, warp: 2, arrive: 2, explode: 2, gameover: 2 };
+    const MIN = { hover: 60, tick: 35, click: 40, toggle: 120, lock: 120, open: 200, close: 200, whoosh: 250, warp: 800, arrive: 800, success: 400, error: 300, type: 30, boot: 45, ping: 300, scan: 300, transmit: 1000, chime: 70, shoot: 70, hit: 50, explode: 120, pickup: 80, gameover: 1500, discover: 350, gravity: 450, emp: 400, slingshot: 90, relay: 70 };
+    const PRIO = { hover: 0, tick: 0, type: 0, boot: 0, warp: 2, arrive: 2, explode: 2, gameover: 2, discover: 2, gravity: 2, emp: 2 };
     const lastAt = Object.create(null);
     function play(name, opts) {
       if (!sfxOn || !audible() || !Object.prototype.hasOwnProperty.call(R, name)) return;

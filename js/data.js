@@ -65,7 +65,7 @@
 
     projects: [
       {
-        kind: 'project', id: 'back-exit', num: '01',
+        kind: 'project', id: 'back-exit', category: 'game', num: '01',
         title: 'The Back Exit', listTitle: 'The Back Exit',
         meta: 'Game · Unity · 2024', type: 'Game', year: '2024',
         icon: '👁', art: 'horror',
@@ -77,7 +77,7 @@
         download: 'https://drive.google.com/file/d/1evKDtQj6hWwKQmNIAamry9-bZYq2-gst/view',
       },
       {
-        kind: 'project', id: 'zyqra', num: '02',
+        kind: 'project', id: 'zyqra', category: 'ai', num: '02',
         title: 'Zyqra — AI Learning', listTitle: 'Zyqra AI Learning',
         meta: 'Web App · Python · 2024', type: 'Web App', year: '2024',
         icon: '◈', art: 'ai',
@@ -88,7 +88,7 @@
         listTags: ['Python', 'Streamlit', 'AI', 'ML'],
       },
       {
-        kind: 'project', id: 'forest', num: '03',
+        kind: 'project', id: 'forest', category: 'game', num: '03',
         title: 'Realistic Forest — HDRP', listTitle: 'Realistic Forest HDRP',
         meta: '3D Environment · Unity · 2023', type: '3D Environment', year: '2023',
         icon: '🌲', art: 'forest',
@@ -99,7 +99,7 @@
         listTags: ['Unity HDRP', 'GI', 'Lighting'],
       },
       {
-        kind: 'project', id: 'pgen', num: '04',
+        kind: 'project', id: 'pgen', category: 'game', num: '04',
         title: 'Procedural Generation', listTitle: 'Procedural Generation',
         meta: 'R&D · Shaders · 2024', type: 'R&D', year: '2024',
         icon: '◇', art: 'shader',
@@ -110,7 +110,7 @@
         listTags: ['GLSL', 'Procedural', 'Math'],
       },
       {
-        kind: 'project', id: 'portfolio-v1', num: '05',
+        kind: 'project', id: 'portfolio-v1', category: 'web', num: '05',
         title: '3D Interactive Portfolio', listTitle: 'Personal portfolio v1',
         meta: 'Interactive Web · 2024', type: 'Interactive Web', year: '2024',
         icon: '◉', art: 'portfolio',
@@ -122,7 +122,7 @@
         link: 'https://gokulakumarans.netlify.app',
       },
       {
-        kind: 'project', id: 'portfolio-v2', num: '06',
+        kind: 'project', id: 'portfolio-v2', category: 'web', num: '06',
         title: 'Interactive Space Portfolio', listTitle: 'Personal portfolio v2',
         meta: 'Interactive Web · 2024', type: 'Interactive Web', year: '2024',
         icon: '◉', art: 'portfolio',
@@ -206,6 +206,16 @@
       mailBody: 'Hi Gokula,\n\nI want to talk about a project ...',
       prefill: 'Hi Gokula,\n\nI want to talk about a project. Here are the details:\n\n',
     },
+
+    objectives: [
+      { id: 'first-contact', code: 'OBJ-01', title: 'Orbital Ignition', desc: 'Engage the ship systems from the launch sequence.', sector: 0, sectorName: 'Origin' },
+      { id: 'event-horizon', code: 'OBJ-02', title: 'Singularity Grazer', desc: 'Double-click or hold near the Hero Black Hole to trigger a relativistic spacetime ripple.', sector: 0, sectorName: 'Origin' },
+      { id: 'full-spectrum', code: 'OBJ-03', title: 'Signal Triangulation', desc: 'Lock onto 3 different role beacons on the interactive 3D Holo-Planet.', sector: 1, sectorName: 'Signal' },
+      { id: 'deep-scan', code: 'OBJ-04', title: 'Biometric Clearance', desc: 'Scan the Crew Dossier portrait with the X-Ray lens to verify quantum clearance.', sector: 2, sectorName: 'Crew' },
+      { id: 'symphony-stars', code: 'OBJ-05', title: 'Harmonic Constellation', desc: 'Ring all 6 certificate stars in the Constellations sky to summon a meteor shower.', sector: 8, sectorName: 'Constellations' },
+      { id: 'wormhole-jumper', code: 'OBJ-06', title: 'Beyond Charted Space', desc: 'Traverse the closing Wormhole at the end of the voyage back to Origin.', sector: 9, sectorName: 'Wormhole' },
+      { id: 'ace-pilot', code: 'OBJ-07', title: 'Void Ace Pilot', desc: 'Score 400+ in Asteroid Run DX or clear a level in Orbital Slingshot.', sector: 0, sectorName: 'Arcade Deck' },
+    ],
 
     secret: {
       message: "Hi! Most people stop scrolling here. You didn't. That's the kind of curiosity that builds the best engineers — and the best games. This site was hand-rolled without a framework: a hand-written cosmos shader, a generative space score synthesised live in your browser, and a stack of niceties I shipped because I wanted you to feel something. If that resonates with you, we should probably talk.",

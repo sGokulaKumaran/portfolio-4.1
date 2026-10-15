@@ -1,8 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · voyage-b.css
+   VOYAGER 6.0 · voyage-b.css
    Sector 2 "Crew" (about)        .panel-about
    Sector 3 "Trajectory" (edu)    .panel-edu
-   Tokens only. Violet = interactive, cyan = data, green = status.
    ═══════════════════════════════════════════════════════════════ */
 
 /* ───────────────────────── sector 2 · crew ───────────────────────── */
@@ -15,15 +14,14 @@
 
 /* ── dossier ── */
 .panel-about .dossier {
-  --lens: 120px;
-  --lx: var(--mx, 50%);          /* fx.js feeds --mx / --my (px) on hover */
-  --ly: var(--my, 30%);
+  --lens: 124px;
+  --lx: 50%;
+  --ly: 36%;
   width: 100%;
   max-width: 400px;
   max-width: min(400px, 46svh);
   justify-self: center;
 }
-/* the figure reveals through its own wipe, not the generic fade */
 .panel-about .dossier[data-reveal].is-in { animation: none; }
 
 .panel-about .dossier-frame {
@@ -33,7 +31,7 @@
   --brk-len: 14px;
   --brk-color: var(--line-2);
 }
-.panel-about .dossier.is-spot .dossier-frame,
+.panel-about .dossier.is-lens .dossier-frame,
 .panel-about .dossier.is-scanning .dossier-frame {
   --brk-inset: -11px;
   --brk-color: var(--cyan);
@@ -44,6 +42,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface-solid);
   touch-action: pan-y;
+  cursor: crosshair;
 }
 .panel-about .dossier-img,
 .panel-about .dossier-xray {
@@ -57,7 +56,7 @@
 }
 .panel-about .dossier-img { z-index: 0; }
 
-/* x-ray: the same portrait, cold and monochrome, seen only through the lens */
+/* x-ray: cold cyan biometric layer seen strictly inside the lens */
 .panel-about .dossier-xray {
   z-index: 1;
   filter: grayscale(1) contrast(1.45) brightness(1.3) sepia(1) hue-rotate(150deg) saturate(2.4);
@@ -82,10 +81,10 @@
   opacity: 0;
   transition: opacity var(--t-2) var(--ease-out);
 }
-.panel-about .dossier.is-spot .dossier-xray,
+.panel-about .dossier.is-lens .dossier-xray,
 .panel-about .dossier.is-scanning .dossier-xray { opacity: 1; }
-.panel-about .dossier.is-spot .dossier-view::after,
-.panel-about .dossier.is-scanning .dossier-view::after { opacity: 0.55; }
+.panel-about .dossier.is-lens .dossier-view::after,
+.panel-about .dossier.is-scanning .dossier-view::after { opacity: 0.65; }
 
 .panel-about .dossier-hint {
   position: absolute; left: 0.85rem; bottom: 0.75rem; z-index: 4;
@@ -192,9 +191,16 @@
 .panel-about .about-tags .chip {
   min-height: 34px;
   background: var(--surface);
+  cursor: pointer;
   transition: color var(--t-2), border-color var(--t-2), background-color var(--t-2), translate var(--t-2) var(--ease-out);
 }
-.panel-about .about-tags .chip.is-in { animation-name: vb-chip; animation-duration: var(--t-3); }
+.panel-about .about-tags .chip.is-active,
+.panel-about .about-tags .chip[aria-pressed='true'] {
+  color: var(--ink);
+  border-color: var(--cyan);
+  background: rgba(0, 229, 255, 0.14);
+}
+.panel-about .about-tags li.is-in .chip { animation-name: vb-chip; animation-duration: var(--t-3); }
 @keyframes vb-chip { from { opacity: 0; translate: 0 12px; } }
 @media (hover: hover) {
   .panel-about .about-tags .chip:hover { color: var(--ink); border-color: var(--violet); translate: 0 -2px; }
@@ -211,7 +217,6 @@
 .panel-edu .edu-track {
   position: relative;
   --edu-drop: clamp(6.5rem, 15vh, 9rem);
-  /* the backdrop draws a ringed planet at the right edge: keep the cards out of the last 14vw */
   --edu-clear: max(0px, calc(14vw - max(var(--gutter), (100vw - var(--max)) / 2)));
 }
 
@@ -240,7 +245,7 @@
 .panel-edu .traj-ship-body { fill: var(--ink); }
 .panel-edu .traj-ship-halo { fill: var(--cyan); opacity: 0.16; }
 
-/* waypoint cards — stacked beside a vertical rail by default */
+/* waypoint cards */
 .panel-edu .edu-points {
   position: relative; z-index: 1;
   display: grid;
@@ -318,7 +323,6 @@
 .panel-edu .waypoint:hover .waypoint-open svg,
 .panel-edu .waypoint:focus-visible .waypoint-open svg { translate: 2px -2px; }
 
-/* wide screens: waypoint A low on the left, B high on the right, the S-curve dives between them */
 @media (min-width: 881px) {
   .panel-edu .edu-track.is-duo .edu-points {
     grid-template-columns: minmax(0, 5fr) minmax(0, 2fr) minmax(0, 5fr);
@@ -330,3 +334,18 @@
   .panel-edu .edu-track.is-duo .edu-point:first-child { grid-column: 1; grid-row: 1; justify-self: start; margin-top: var(--edu-drop); }
   .panel-edu .edu-track.is-duo .edu-point:last-child { grid-column: 3; grid-row: 1; justify-self: end; margin-bottom: var(--edu-drop); }
 }
+
+.panel-about .dossier-stamp {
+  position: absolute; right: 0.85rem; top: 0.85rem; z-index: 4;
+  display: grid; gap: 0.2rem; padding: 0.38rem 0.6rem;
+  border: 1px solid var(--cyan); border-radius: var(--radius-sm);
+  background: rgba(5, 6, 10, 0.86); color: var(--cyan);
+  pointer-events: none; opacity: 0; scale: 0.92;
+  transition: opacity var(--t-2) var(--ease-out), scale var(--t-2) var(--ease-out), border-color var(--t-2);
+}
+.panel-about .dossier-stamp b { color: var(--amber); font-size: 0.62rem; }
+.panel-about .dossier-stamp.is-verified { border-color: var(--green); }
+.panel-about .dossier-stamp.is-verified b { color: var(--green); }
+.panel-about .dossier.is-lens .dossier-stamp,
+.panel-about .dossier.is-scanning .dossier-stamp,
+.panel-about .dossier-stamp.is-verified { opacity: 1; scale: 1; }

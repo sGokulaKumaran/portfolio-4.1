@@ -435,7 +435,18 @@
 
       bus.on('sector', d => { if (d) setSector(d.index); });
       bus.on('measure', measure);            // core re-measures (and emits this) on every resize, font load and reflow
-      bus.on('enter', () => { tEnter = now(); acc = 1; setTimeout(syncAudio, 0); });
+      bus.on('enter', () => {
+        tEnter = now(); acc = 1; setTimeout(syncAudio, 0);
+        setTimeout(() => { if (GK.unlockObjective) GK.unlockObjective('first-contact'); }, 900);
+      });
+      const qCount = $('questCount'), cqCount = $('chartQuestCount'), qBtn = $('questBtn');
+      bus.on('objective:state', d => {
+        if (!d) return;
+        const txt = d.done + '/' + d.total;
+        if (qCount) qCount.textContent = txt;
+        if (cqCount) cqCount.textContent = txt;
+        if (qBtn) qBtn.classList.toggle('is-complete', d.done >= d.total);
+      });
       setSector(state.sector);
       measure();
     }

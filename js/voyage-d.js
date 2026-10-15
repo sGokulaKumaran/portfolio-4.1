@@ -1,12 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · voyage-d.js
+   VOYAGER 6.0 · voyage-d.js
    Sector 7 · Systems         — an orrery of skills + discipline cards
    Sector 8 · Constellations  — a playable certificate constellation
    Sector 9 · Transmission    — contact details + transmission console
 
-   All content comes from GK.data. Every canvas draws only while it
-   is on screen, from the shared ticker, and renders a single static
-   frame under reduced motion.
+   Upgrades in 6.0:
+   - Desktop mouse + touch planet click pinning in Systems Orrery
+   - Lagrange dust belt & harmonic resonance vectors on active orbit
+   - Live Harmonic Star Counter (0/6 Rung) on Constellations canvas
+   - Exact bounding-box pointer coordinates on all interactive canvases
    ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -22,7 +24,6 @@
     const TAU = Math.PI * 2;
     const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
-    /* ───────────── tokens → canvas colours ───────────── */
     const rootStyle = getComputedStyle(doc.documentElement);
     const to255 = hex => { const c = U.hexToRgb(hex); return [Math.round(c[0] * 255), Math.round(c[1] * 255), Math.round(c[2] * 255)]; };
     const tokenRgb = (name, fallback) => { const v = rootStyle.getPropertyValue(name).trim(); return to255(HEX.test(v) ? v : fallback); };
@@ -35,12 +36,9 @@
     const MONO = tokenFont('--font-mono', 'ui-monospace, monospace');
     const DISPLAY = tokenFont('--font-display', 'system-ui, sans-serif');
     const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a <= 0 ? 0 : a >= 1 ? 1 : a.toFixed(3)) + ')';
-    /* live (cross-faded) sector palette, written into a reusable array */
     const pal = (which, out) => { const p = state.palette[which]; out[0] = (p[0] * 255) | 0; out[1] = (p[1] * 255) | 0; out[2] = (p[2] * 255) | 0; return out; };
-    /* eased follow that snaps when motion is reduced */
     const ease = (cur, target, lambda, dt) => (env.reduced ? target : U.damp(cur, target, lambda, dt));
 
-    /* ───────────── icons (24px grid, 1.5px stroke, currentColor) ───────────── */
     const ICON = {
       game: '<rect x="2.5" y="7" width="19" height="10.5" rx="5.25"/><path d="M7.75 10.5v3.5M6 12.25h3.5"/><circle cx="15.4" cy="13.5" r="0.9"/><circle cx="18" cy="11" r="0.9"/>',
       web: '<rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 9h18"/><path d="m10 12.5-2 2 2 2M14 12.5l2 2-2 2"/>',
@@ -54,10 +52,6 @@
     };
     const svg = (name, cls) => '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + (ICON[name] || ICON.orbit) + '</svg>';
 
-    /* ───────────── canvas stage ─────────────
-       Sizes the backing store, tracks visibility and runs `draw`
-       from the shared ticker only while the canvas is on screen.
-       Under reduced motion it draws only when marked dirty. */
     function makeStage(canvas, onLayout) {
       let ctx = null;
       try { ctx = canvas.getContext('2d'); } catch (e) { ctx = null; }
@@ -68,6 +62,12 @@
         if (d.w < 2 || d.h < 2) return;
         s.w = d.w; s.h = d.h; s.dpr = d.dpr; s.dirty = true;
         if (onLayout) onLayout(s);
+      };
+      s.localPos = function (e) {
+        const r = canvas.getBoundingClientRect();
+        const sx = r.width > 0 ? s.w / r.width : 1;
+        const sy = r.height > 0 ? s.h / r.height : 1;
+        return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
       };
       s.run = function (draw) {
         U.onVisible(canvas, v => { s.visible = v; if (v) s.fit(); });
@@ -99,7 +99,6 @@
       const colorOf = d => (HEX.test(d.color || '') ? d.color : '#6C63FF');
       const skillsOf = d => (Array.isArray(d.skills) ? d.skills : []);
 
-      /* discipline cards */
       let cards = [];
       if (cardsHost) {
         cardsHost.innerHTML = list.map((d, k) =>
@@ -113,7 +112,6 @@
         GK.scan(cardsHost);
       }
 
-      /* keyboard / screen-reader mirror of the canvas */
       const foundations = Array.isArray(data.foundations) ? data.foundations : [];
       let proxies = [];
       if (proxyHost) {
@@ -123,12 +121,11 @@
         proxies = qsa('button', proxyHost);
       }
 
-      /* ── highlight state: who is asking for which orbit ── */
-      let hoverPlanet = null;  // { k, j } under the pointer
-      let hoverCard = -1;      // card under the pointer
-      let focusProxy = -1;     // focused proxy button
-      let pin = null;          // { k, j (-1 = whole orbit), until } from a tap or a proxy press
-      let cycle = 0;           // orbit whose labels show while nothing is highlighted
+      let hoverPlanet = null;
+      let hoverCard = -1;
+      let focusProxy = -1;
+      let pin = null;
+      let cycle = 0;
       let lastReadout = '';
       let stage = null;
       const activeOrbit = () => (hoverPlanet ? hoverPlanet.k : hoverCard > -1 ? hoverCard : focusProxy > -1 ? focusProxy : pin ? pin.k : -1);
@@ -139,11 +136,12 @@
         const act = activeOrbit(), k = act > -1 ? act : cycle, d = list[k], p = activePlanet();
         if (!d) return;
         const skill = p && p.k === k ? skillsOf(d)[p.j] || '' : '';
-        const key = k + '|' + skill;
+        const locked = pin && pin.k === k ? ' [LOCKED]' : '';
+        const key = k + '|' + skill + '|' + locked;
         if (key === lastReadout) return;
         lastReadout = key;
         readout.style.setProperty('--c', colorOf(d));
-        readoutText.textContent = (d.num || U.pad(k + 1)) + ' · ' + d.title + (skill ? ' · ' + skill : '');
+        readoutText.textContent = (d.num || U.pad(k + 1)) + ' · ' + d.title + (skill ? ' · ' + skill : '') + locked;
       }
       function sync() {
         const act = activeOrbit();
@@ -156,13 +154,18 @@
       cards.forEach((card, k) => {
         card.addEventListener('pointerenter', e => { if (e.pointerType === 'touch') return; hoverCard = k; sync(); });
         card.addEventListener('pointerleave', () => { if (hoverCard === k) { hoverCard = -1; sync(); } });
+        card.addEventListener('click', () => {
+          pin = pin && pin.k === k ? null : { k, j: -1, until: state.time + 12 };
+          GK.sfx('chime', { i: k });
+          sync();
+        });
       });
       proxies.forEach((b, k) => {
         b.addEventListener('focus', () => { focusProxy = k; sync(); });
         b.addEventListener('blur', () => { if (focusProxy === k) { focusProxy = -1; sync(); } });
         b.addEventListener('click', () => { pin = pin && pin.j < 0 && pin.k === k ? null : { k, j: -1, until: Infinity }; sync(); });
       });
-      if (hint) hint.textContent = env.fine ? 'Drag to spin · hover a planet' : 'Drag to spin · tap a planet';
+      if (hint) hint.textContent = env.fine ? 'Drag to spin · hover or click a planet' : 'Drag to spin · tap a planet';
       paintReadout();
 
       if (!canvas) return;
@@ -173,7 +176,7 @@
         G.small = small;
         G.cx = s.w / 2; G.cy = s.h / 2;
         G.R = Math.max(60, Math.min(s.w / 2 - (small ? 14 : 84), (s.h / 2 - 48) / 0.34));
-        G.ratio = clamp((s.h / 2 - 48) / G.R, 0.34, 0.84);   // wide canvases see the plane edge-on, narrow ones from above
+        G.ratio = clamp((s.h / 2 - 48) / G.R, 0.34, 0.84);
         G.pr = small ? 3 : 4; G.core = small ? 13 : 19; G.font = small ? 10 : 11;
         G.moonR = Math.max(G.core + 15, G.R * 0.17);
         widths = Object.create(null);
@@ -183,21 +186,36 @@
       const TILTS = [-0.1, 0.07, -0.05, 0.11], SQUASH = [1, 0.94, 1.05, 0.98];
       const orbits = list.map((d, k) => ({
         k, color: to255(colorOf(d)),
-        f: n > 1 ? k / (n - 1) : 0.6,            // 0 = innermost, 1 = outermost
-        period: n > 1 ? 40 + (50 * k) / (n - 1) : 60, // 40–90 s
+        f: n > 1 ? k / (n - 1) : 0.6,
+        period: n > 1 ? 40 + (50 * k) / (n - 1) : 60,
         tilt: TILTS[k % 4], squash: SQUASH[k % 4], phase: k * 1.37,
         R: 0, ry: 0, rot: 0, bright: 0, dim: 1, lab: 0,
         planets: skillsOf(d).map(name => ({ name: String(name), x: -999, y: -999, r: 0, a: 0, depth: 0, grow: 0 })),
       }));
+      /* Lagrange asteroid dust belt */
+      const belt = Array.from({ length: 48 }, (_, i) => ({
+        a0: (i / 48) * TAU + ((i * 1.618) % 0.2),
+        rf: 0.62 + ((i * 0.38196) % 0.08) - 0.04,
+        sz: (i % 3 === 0) ? 1.5 : 1.0,
+      }));
       const moons = foundations.map(name => ({ name: String(name), x: 0, y: 0, depth: 0 }));
       const initials = (data.person && data.person.initials) || 'GK';
-      const SCRUB = 30;               // seconds of orbital time per canvas-width of drag
+      const SCRUB = 30;
       let sim = 12, ts = 1, vel = 0, spd = 1, cycleT = 0, moonDim = 1;
       const drag = { id: -1, on: false, x: 0, x0: 0, y0: 0, t: 0, v: 0 };
       const pc = [0, 0, 0];
 
       function drawPlanet(ctx, o, p, tl) {
         const alpha = (0.6 + 0.4 * (p.depth * 0.5 + 0.5)) * o.dim;
+        if (o.bright > 0.15) {
+          /* harmonic spoke to core */
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = rgba(o.color, 0.14 * o.bright * o.dim);
+          ctx.beginPath();
+          ctx.moveTo(G.cx, G.cy);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+        }
         if (tl > 0.01 || tl < -0.01) {
           ctx.lineWidth = 1.5;
           for (let i = 0; i < 3; i++) {
@@ -211,8 +229,8 @@
         ctx.fillStyle = rgba(INK, 0.5 * alpha);
         ctx.beginPath(); ctx.arc(p.x - p.r * 0.28, p.y - p.r * 0.28, p.r * 0.36, 0, TAU); ctx.fill();
         if (p.grow > 0.02) {
-          ctx.lineWidth = 1; ctx.strokeStyle = rgba(o.color, 0.7 * p.grow);
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 4 + 2 * p.grow, 0, TAU); ctx.stroke();
+          ctx.lineWidth = 1.2; ctx.strokeStyle = rgba(o.color, 0.8 * p.grow);
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 4 + 2.5 * p.grow, 0, TAU); ctx.stroke();
         }
       }
       function drawMoon(ctx, m) {
@@ -223,7 +241,7 @@
         const cx = G.cx, cy = G.cy, r = G.core, pulse = env.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(st.time * 1.3);
         pal('a', pc);
         const halo = r * 4.4, g = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, halo);
-        g.addColorStop(0, rgba(pc, 0.4 + 0.08 * pulse)); g.addColorStop(0.4, rgba(pc, 0.1)); g.addColorStop(1, rgba(pc, 0));
+        g.addColorStop(0, rgba(pc, 0.42 + 0.08 * pulse)); g.addColorStop(0.4, rgba(pc, 0.12)); g.addColorStop(1, rgba(pc, 0));
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, halo, 0, TAU); ctx.fill();
         ctx.fillStyle = rgba(INK, 1); ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
         ctx.lineWidth = 1; ctx.strokeStyle = rgba(INK, 0.3 + 0.2 * pulse);
@@ -240,7 +258,7 @@
         if (bx + bw > w - 3) bx = x - r - 8 - bw; else if (bx < 3) bx = x + r + 8;
         bx = clamp(bx, 3, Math.max(3, w - bw - 3));
         const by = clamp(y - bh / 2, 3, Math.max(3, h - bh - 3));
-        ctx.fillStyle = rgba(BG, 0.8 * alpha);
+        ctx.fillStyle = rgba(BG, 0.84 * alpha);
         ctx.fillRect(bx, by, bw, bh);
         ctx.lineWidth = 1; ctx.strokeStyle = rgba(color, (strong ? 0.95 : 0.5) * alpha);
         ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
@@ -253,7 +271,6 @@
         if (pin && pin.until < st.time) { pin = null; sync(); }
         const act = activeOrbit(), ap = activePlanet();
 
-        /* time: slows right down while a planet is inspected; drag scrubs it with inertia */
         ts = ease(ts, ap ? 0.1 : 1, 5, dt);
         if (reduced) spd = 0;
         else {
@@ -271,7 +288,18 @@
         const tl = 0.22 * clamp(spd, -1.5, 1.5);
         const f0 = G.small ? 0.46 : 0.4;
 
-        /* pass 1 — easing, geometry, orbit rings (far half dimmer than near half) */
+        /* Lagrange asteroid belt */
+        ctx.fillStyle = rgba(INK, 0.18);
+        const bcs = Math.cos(roll), bsn = Math.sin(roll);
+        for (let i = 0; i < belt.length; i++) {
+          const b = belt[i], ba = b.a0 + sim * 0.055;
+          const bR = G.R * b.rf, bry = bR * ratio;
+          const lx = bR * Math.cos(ba), ly = bry * Math.sin(ba);
+          const bx = cx + lx * bcs - ly * bsn, by = cy + lx * bsn + ly * bcs;
+          ctx.fillRect(bx - b.sz * 0.5, by - b.sz * 0.5, b.sz, b.sz);
+        }
+
+        /* pass 1 — easing, geometry, orbit rings */
         for (let k = 0; k < orbits.length; k++) {
           const o = orbits[k], on = act === k, cyc = act < 0 && cycle === k;
           o.bright = ease(o.bright, on ? 1 : cyc ? 0.4 : 0, 7, dt);
@@ -297,7 +325,7 @@
           ctx.beginPath(); ctx.ellipse(cx, cy, o.R, o.ry, o.rot, 0, Math.PI); ctx.stroke();
         }
 
-        /* moons: the foundations circling the core */
+        /* moons */
         moonDim = ease(moonDim, act > -1 ? 0.4 : 1, 7, dt);
         if (moons.length) {
           const mR = G.moonR, mry = mR * ratio, mcs = Math.cos(roll), msn = Math.sin(roll);
@@ -346,7 +374,6 @@
         if (top) drawLabel(ctx, top.name, top.x, top.y, top.r + 6, topOrbit.color, Math.max(top.grow, topOrbit.lab), true);
       });
 
-      /* ── pointer: hover a planet, drag to scrub, tap to inspect ── */
       function pick(x, y, slop) {
         let best = null, bd = Infinity;
         for (let k = 0; k < orbits.length; k++) {
@@ -370,12 +397,17 @@
         const wasDrag = drag.on;
         if (wasDrag) {
           vel = fling && !env.reduced ? clamp(drag.v, -40, 40) : 0;
-          try { canvas.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
+          try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
           canvas.classList.remove('is-dragging');
-        } else if (fling && e.pointerType !== 'mouse') {
-          const hit = pick(e.offsetX, e.offsetY, 18);
-          pin = hit ? { k: hit.k, j: hit.j, until: state.time + 6 } : null;
-          if (hit) GK.sfx('tick', { x: e.clientX });
+        } else if (fling) {
+          const pt = stage.localPos(e);
+          const hit = pick(pt.x, pt.y, e.pointerType === 'mouse' ? 14 : 18);
+          if (hit && pin && pin.k === hit.k && pin.j === hit.j) {
+            pin = null;
+          } else {
+            pin = hit ? { k: hit.k, j: hit.j, until: state.time + 8 } : null;
+          }
+          if (hit) GK.sfx('chime', { i: hit.k, x: e.clientX });
           sync();
         }
         drag.id = -1; drag.on = false;
@@ -394,7 +426,7 @@
             const tx = e.clientX - drag.x0, ty = e.clientY - drag.y0;
             if (Math.abs(tx) > (e.pointerType === 'mouse' ? 4 : 8) && Math.abs(tx) > Math.abs(ty)) {
               drag.on = true; drag.x = e.clientX; drag.t = performance.now();
-              try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* capture is optional */ }
+              try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
               canvas.classList.add('is-dragging');
               setHover(null);
             } else if (Math.abs(ty) > 12) { drag.id = -1; }
@@ -410,7 +442,8 @@
           return;
         }
         if (e.pointerType === 'touch') return;
-        setHover(pick(e.offsetX, e.offsetY, 10), e.clientX);
+        const pt = stage.localPos(e);
+        setHover(pick(pt.x, pt.y, 12), e.clientX);
       });
       canvas.addEventListener('pointerup', e => endDrag(e, true));
       canvas.addEventListener('pointercancel', e => endDrag(e, false));
@@ -425,7 +458,6 @@
       if (!certs.length) return;
       const grid = byId('certsGrid'), canvas = byId('certsCanvas'), hint = byId('certsHint');
 
-      /* the figure: ids in drawing order with normalised sky positions */
       const SKY = [['csharp', 0.16, 0.30], ['java', 0.50, 0.20], ['responsive', 0.86, 0.32], ['dsa', 0.76, 0.70], ['blender', 0.44, 0.78], ['fullstack', 0.14, 0.68]];
       const stars = [];
       SKY.forEach(row => {
@@ -435,15 +467,16 @@
       const n = stars.length;
       const starOf = id => { for (let i = 0; i < n; i++) if (stars[i].item.id === id) return i; return -1; };
 
-      const STEP = 0.22;          // seconds per line / star during the ignition sequence
+      const STEP = 0.22;
       let stage = null;
-      let seq = null;             // state.time at which the ignition sequence starts
+      let seq = null;
       let done = false, chimed = 0;
       let hoverStar = -1, sel = -1, cardHover = -1, cardFocus = -1, lastRing = 0, lastType = 'mouse';
       const cardOf = Object.create(null);
       const litStar = () => (hoverStar > -1 ? hoverStar : sel > -1 ? sel : cardHover > -1 ? cardHover : cardFocus);
       const ignited = i => !stage || done || (seq !== null && state.time - seq >= i * STEP);
 
+      const rungStars = new Set();
       function ring(i, x) {
         if (i < 0 || !state.entered || !ignited(i)) return;
         const now = performance.now();
@@ -451,6 +484,12 @@
         lastRing = now;
         stars[i].ping = state.time;
         GK.sfx('chime', x == null ? { i } : { i, x });
+        rungStars.add(i);
+        if (stage) stage.dirty = true;
+        if (rungStars.size >= n) {
+          if (GK.cosmos && GK.cosmos.shower) GK.cosmos.shower(4.0);
+          if (GK.unlockObjective) GK.unlockObjective('symphony-stars');
+        }
       }
       function sync() {
         const lit = litStar(), id = lit > -1 ? stars[lit].item.id : '';
@@ -464,7 +503,6 @@
       const open = (item, from) => GK.modal.open(item, { from: from || cardOf[item.id] || null, collection: certs });
       const keyboardFocus = node => { try { return node.matches(':focus-visible'); } catch (e) { return false; } };
 
-      /* certificate cards */
       if (grid) {
         grid.innerHTML = certs.map(c =>
           '<button type="button" class="cert glass" data-spot data-cursor="OPEN" data-cursor-lock data-sfx-hover="none" data-cert="' + esc(c.id) + '" aria-label="' + esc((c.title || c.short) + ' — ' + (c.issuer || c.meta || 'Certificate') + '. Open certificate') + '">' +
@@ -491,7 +529,7 @@
       if (!canvas || !n) return;
       const sky = canvas.closest('.certs-sky') || canvas;
       const G = { font: 11, core: 2.6, spike: 12, reach: 26 };
-      const M = 8;                 // backdrop bleed so pointer parallax never shows an edge
+      const M = 8;
       const bg = doc.createElement('canvas');
       const twinklers = [];
       let widths = Object.create(null), bgKey = '';
@@ -499,7 +537,6 @@
       const LAV = sector && sector.rgbB ? [Math.round(sector.rgbB[0] * 255), Math.round(sector.rgbB[1] * 255), Math.round(sector.rgbB[2] * 255)] : INK;
       const ca = [0, 0, 0], cb = [0, 0, 0];
 
-      /* deterministic backdrop so the sky does not reshuffle on resize */
       function mulberry(seed) {
         let a = seed >>> 0;
         return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -537,7 +574,6 @@
         seq = state.time + 0.2;
         stage.dirty = true;
       }
-      /* the sequence is cued by the reveal primitive; without it, by the visitor entering */
       const viaReveal = doc.documentElement.classList.contains('has-reveal') && sky.hasAttribute('data-reveal');
       bus.on('reveal', node => { if (node === sky) start(); });
       if (sky.classList.contains('is-in')) start();
@@ -550,7 +586,6 @@
         const ctx = stage.ctx, w = stage.w, h = stage.h, reduced = env.reduced;
         const P = st.pointer, drift = env.fine && !reduced ? 1 : 0, ox = -P.sx * 5 * drift, oy = -P.sy * 4 * drift;
 
-        /* backdrop: ≈140 dim stars, a few of them breathing */
         if (bg.width > 1) ctx.drawImage(bg, ox - M, oy - M, w + M * 2, h + M * 2);
         for (let i = 0; i < twinklers.length; i++) {
           const t = twinklers[i];
@@ -570,7 +605,6 @@
         const lit = litStar();
         pal('a', ca); pal('b', cb);
 
-        /* figure: each line draws toward the next star, closing the loop */
         if (n > 1) {
           ctx.lineCap = 'round';
           for (let i = 0; i < n; i++) {
@@ -583,7 +617,7 @@
             ctx.beginPath(); ctx.moveTo(a.x + ux * gap, a.y + uy * gap); ctx.lineTo(a.x + ux * end, a.y + uy * end); ctx.stroke();
             if (p < 1) { ctx.fillStyle = rgba(WHITE, 0.9); ctx.beginPath(); ctx.arc(a.x + ux * end, a.y + uy * end, 1.6, 0, TAU); ctx.fill(); }
           }
-          if (done && !reduced) {   // a quiet signal keeps circling the finished figure
+          if (done && !reduced) {
             const u = ((st.time * 0.09) % 1) * n, i0 = Math.floor(u) % n, f = u - Math.floor(u);
             const a = stars[i0], b = stars[(i0 + 1) % n], x = a.x + (b.x - a.x) * f, y = a.y + (b.y - a.y) * f;
             ctx.fillStyle = rgba(ca, 0.2); ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill();
@@ -591,16 +625,16 @@
           }
         }
 
-        /* named stars: halo, 4-point spikes, twinkle, ignition pop, note ring */
         for (let i = 0; i < n; i++) {
           const s = stars[i], g = clamp((t - i * STEP) / 0.5);
           s.hot = ease(s.hot, lit === i ? 1 : 0, 9, dt);
           if (g <= 0) continue;
+          const isRung = rungStars.has(i);
           const tw = reduced ? 0.9 : 0.8 + 0.2 * Math.sin(st.time * (1.4 + i * 0.23) + i * 2.1);
           const pop = g < 1 ? 1 + 0.7 * Math.sin(g * Math.PI) : 1, grow = U.easeOutCubic(g);
           const L = (G.spike + 8 * s.hot) * tw * pop * grow, core = (G.core + 1.1 * s.hot) * pop * grow;
-          ctx.fillStyle = rgba(ca, 0.08 + 0.1 * s.hot); ctx.beginPath(); ctx.arc(s.x, s.y, core * 5, 0, TAU); ctx.fill();
-          ctx.fillStyle = rgba(ca, 0.16 + 0.14 * s.hot); ctx.beginPath(); ctx.arc(s.x, s.y, core * 2.4, 0, TAU); ctx.fill();
+          ctx.fillStyle = rgba(isRung ? GREEN : ca, 0.08 + 0.1 * s.hot); ctx.beginPath(); ctx.arc(s.x, s.y, core * 5, 0, TAU); ctx.fill();
+          ctx.fillStyle = rgba(isRung ? GREEN : ca, 0.16 + 0.14 * s.hot); ctx.beginPath(); ctx.arc(s.x, s.y, core * 2.4, 0, TAU); ctx.fill();
           ctx.fillStyle = rgba(WHITE, 0.92);
           spike(ctx, s.x, s.y, L, 1.15); spike(ctx, s.x, s.y, 1.15, L);
           ctx.beginPath(); ctx.arc(s.x, s.y, core, 0, TAU); ctx.fill();
@@ -610,13 +644,12 @@
             ctx.lineWidth = 1.2; ctx.strokeStyle = rgba(ca, 0.8 * (1 - k));
             ctx.beginPath(); ctx.arc(s.x, s.y, core + 4 + 26 * U.easeOutCubic(k), 0, TAU); ctx.stroke();
           }
-          if (s.hot > 0.02) {
-            ctx.lineWidth = 1; ctx.strokeStyle = rgba(INK, 0.5 * s.hot);
+          if (s.hot > 0.02 || isRung) {
+            ctx.lineWidth = 1; ctx.strokeStyle = rgba(isRung ? GREEN : INK, isRung ? 0.45 : 0.5 * s.hot);
             ctx.beginPath(); ctx.arc(s.x, s.y, 17 - 3 * s.hot, 0, TAU); ctx.stroke();
           }
         }
 
-        /* names sit outside the figure: above the upper stars, below the lower ones */
         ctx.font = '500 ' + G.font + 'px ' + MONO;
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
         for (let i = 0; i < n; i++) {
@@ -631,9 +664,16 @@
           ctx.fillStyle = rgba(INK, a);
           ctx.fillText(s.label, lx, ly);
         }
+
+        /* Harmonic Resonance progress counter */
+        if (done) {
+          const statusTxt = rungStars.size >= n ? 'HARMONIC CONSTELLATION COMPLETE ✦' : 'HARMONIC RESONANCE · ' + rungStars.size + ' / ' + n + ' RUNG';
+          ctx.font = '500 10px ' + MONO;
+          ctx.fillStyle = rgba(rungStars.size >= n ? GREEN : INK, 0.72);
+          ctx.fillText(statusTxt, 14, 18);
+        }
       });
 
-      /* ── pointer: hover rings, click opens; touch taps ring first, then open ── */
       function pick(x, y) {
         let best = -1, bd = G.reach * G.reach;
         for (let i = 0; i < n; i++) {
@@ -646,7 +686,8 @@
       canvas.addEventListener('pointerdown', e => { lastType = e.pointerType || 'mouse'; });
       canvas.addEventListener('pointermove', e => {
         if (e.pointerType === 'touch') return;
-        const i = pick(e.offsetX, e.offsetY);
+        const pt = stage.localPos(e);
+        const i = pick(pt.x, pt.y);
         if (i === hoverStar) return;
         hoverStar = i;
         ring(i, e.clientX);
@@ -654,7 +695,8 @@
       });
       canvas.addEventListener('pointerleave', () => { if (hoverStar > -1) { hoverStar = -1; sync(); } });
       canvas.addEventListener('click', e => {
-        const i = pick(e.offsetX, e.offsetY);
+        const pt = stage.localPos(e);
+        const i = pick(pt.x, pt.y);
         if (i < 0) { if (sel > -1) { sel = -1; sync(); } return; }
         if (lastType !== 'mouse' && sel !== i) { sel = i; ring(i, e.clientX); sync(); return; }
         open(stars[i].item);
@@ -672,7 +714,6 @@
         : 'mailto:' + email + '?subject=' + encodeURIComponent(subject || '') + '&body=' + encodeURIComponent(body || ''));
       const setText = (id, text) => { const node = byId(id); if (node && text) node.textContent = text; };
 
-      /* ── copy the address: async clipboard first, hidden-textarea fallback ── */
       function legacyCopy(text) {
         try {
           const ta = U.el('textarea', { readonly: true, tabindex: '-1', 'aria-hidden': 'true', style: { position: 'fixed', top: '0', left: '0', width: '1px', height: '1px', padding: '0', border: '0', opacity: '0', fontSize: '16px' } });
@@ -691,7 +732,7 @@
       function copyText(text) {
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
-        } catch (e) { /* fall through to the legacy path */ }
+        } catch (e) {}
         return Promise.resolve(legacyCopy(text));
       }
       const emailBtn = byId('emailLink');
@@ -710,7 +751,6 @@
         });
       }
 
-      /* ── left column: address, details, socials ── */
       setText('emailText', email);
       if (emailBtn) {
         if (email) emailBtn.setAttribute('aria-label', 'Copy email address ' + email);
@@ -730,13 +770,11 @@
         GK.scan(socialRow);
       }
 
-      /* ── transmission console ── */
       const form = byId('contactForm');
       if (!form) return;
       const nameEl = byId('cf-name'), mailEl = byId('cf-email'), msgEl = byId('cf-message'), btn = byId('submitBtn');
       const labelEl = byId('submitLabel'), stateEl = byId('txState'), note = byId('txNote'), noteCopy = byId('txCopy'), servicesHost = byId('txServices');
 
-      /* service: real radios dressed as chips; pressing the chosen one again clears it */
       if (servicesHost && Array.isArray(contact.services)) {
         servicesHost.innerHTML = contact.services.map(s =>
           '<label class="tx-chip"><input type="radio" name="service" value="' + esc(s) + '" /><span>' + esc(s) + '</span></label>').join('');
@@ -749,7 +787,6 @@
         });
       }
 
-      /* waveform: idle sine + noise, a decaying impulse per keystroke, live audio when available */
       const wave = (function () {
         const api = { pulse() {}, surge() {}, ok() {} };
         const cv = byId('txWave') || form.querySelector('.tx-wave');
@@ -788,7 +825,7 @@
           ctx.fillStyle = rgba(INK, 0.12);
           for (let x = 12; x < w; x += 24) ctx.fillRect(x, h - 5, 1, 3);
           pal('a', echo);
-          trace(ctx, w, h, t - 0.4, amp * 0.72, null, 1, rgba(echo, 0.3));
+          trace(ctx, w, h, t - 0.4, amp * 0.72, null, 1, rgba(echo, 0.32));
           for (let i = 0; i < 3; i++) col[i] = Math.round(CYAN[i] + (GREEN[i] - CYAN[i]) * clamp(okT));
           trace(ctx, w, h, t, amp, audio, 1.5, rgba(col, 0.92));
         });
@@ -824,7 +861,7 @@
         const box = node.closest('.tx-field');
         if (!box || env.reduced) return;
         box.classList.remove('is-shake');
-        void box.offsetWidth;                    // restart the animation
+        void box.offsetWidth;
         box.classList.add('is-shake');
         box.addEventListener('animationend', () => box.classList.remove('is-shake'), { once: true });
       }
@@ -854,7 +891,6 @@
           return;
         }
 
-        /* same message format as the original site */
         const checked = form.querySelector('input[name="service"]:checked');
         const name = nameEl.value.trim(), from = mailEl.value.trim(), message = msgEl.value.trim();
         const service = (checked && checked.value) || 'General';

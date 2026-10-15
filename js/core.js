@@ -362,7 +362,9 @@
   GK.palette = { open() {}, close() {}, toggle() {}, isOpen: false }; // flow.js (command palette)
   GK.scan = function () {};                                         // fx.js
   GK.openGame = function () {};                                     // extras.js
-  GK.openSecret = function () {};                                   // extras.js
+  GK.openSecret = function () {};
+  GK.openLog = function () {};
+  GK.unlockObjective = function () {};                                   // extras.js
 
   /* ───────────────────────── module registry + boot ───────────────────────── */
   const modules = [];

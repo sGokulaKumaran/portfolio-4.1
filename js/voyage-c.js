@@ -1,10 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER · voyage-c.js
-   Sector 04 MISSIONS    — work list + cursor-following preview
+   VOYAGER 6.0 · voyage-c.js
+   Sector 04 MISSIONS    — work list + cursor-following preview +
+                           interactive Rows / Bento Grid view toggle
    Sector 05 TELEMETRY   — four stat gauges
    Sector 06 DEPLOYMENTS — internship "deployment logs"
-
-   Everything is rendered from GK.data; items open in GK.modal.
    ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -22,10 +21,10 @@
     const ICON = {
       arrow: '<svg ' + SVG + ' width="16" height="16"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>',
       play: '<svg ' + SVG + ' width="10" height="10"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
+      rows: '<svg ' + SVG + ' width="14" height="14"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+      grid: '<svg ' + SVG + ' width="14" height="14"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>',
     };
 
-    /* cb() once, when fx.js reveals `node` (or, if fx.js is not running, when it
-       first scrolls into view after the visitor has passed the loader). */
     function whenRevealed(node, cb) {
       let done = false, off = function () {};
       const fire = () => { if (done) return; done = true; off(); cb(); };
@@ -54,10 +53,25 @@
       if (meta) meta.textContent = total + ' projects · ' + (env.fine ? 'click' : 'tap') + ' to open';
 
       const typeLine = p => [p.type, p.year].filter(Boolean).join(' · ');
-      /* desktop rows arrive as one staggered group; stacked cards reveal one by one as they scroll in */
       const grouped = env.fine && window.innerWidth >= 880;
+      let activeFilter = 'all';
+      let userViewPref = 'rows'; // 'rows' | 'cards'
 
+      const counts = { all: projects.length, game: 0, ai: 0, web: 0 };
+      projects.forEach(p => { const c = p.category || 'game'; counts[c] = (counts[c] || 0) + 1; });
       host.innerHTML =
+        '<div class="missions-bar" data-reveal="fade" data-delay="120">' +
+          '<div class="missions-filters" role="toolbar" aria-label="Filter missions">' +
+            '<button type="button" class="mission-filter is-active" data-filter="all" aria-pressed="true">All <b>' + U.pad(counts.all) + '</b></button>' +
+            '<button type="button" class="mission-filter" data-filter="game" aria-pressed="false">Unity &amp; 3D <b>' + U.pad(counts.game) + '</b></button>' +
+            '<button type="button" class="mission-filter" data-filter="ai" aria-pressed="false">AI &amp; Python <b>' + U.pad(counts.ai) + '</b></button>' +
+            '<button type="button" class="mission-filter" data-filter="web" aria-pressed="false">Interactive Web <b>' + U.pad(counts.web) + '</b></button>' +
+          '</div>' +
+          '<div class="missions-views" role="group" aria-label="View layout">' +
+            '<button type="button" class="mission-view is-active" data-view="rows" aria-pressed="true" aria-label="Telemetry table view">' + ICON.rows + '<span>Table</span></button>' +
+            '<button type="button" class="mission-view" data-view="cards" aria-pressed="false" aria-label="Bento grid view">' + ICON.grid + '<span>Bento</span></button>' +
+          '</div>' +
+        '</div>' +
         '<div class="missions-head hud-label legible" aria-hidden="true" data-reveal="fade" data-delay="150">' +
           '<span>No.</span><span>Project</span><span>Brief</span><span>Stack</span><span></span>' +
         '</div>' +
@@ -66,7 +80,7 @@
           const title = p.listTitle || p.title || '';
           const line = typeLine(p);
           const tags = list(p.listTags || p.tags).map(t => '<span class="mission-tag">' + esc(t) + '</span>').join('');
-          return '<li class="mission-item"' + (grouped ? '' : ' data-reveal') + '>' +
+          return '<li class="mission-item" data-cat="' + esc(p.category || 'game') + '"' + (grouped ? '' : ' data-reveal') + '>' +
             '<button type="button" class="mission" data-index="' + i + '" data-cursor="OPEN BRIEFING"' +
               ' aria-label="' + esc(title + (line ? ' — ' + line : '') + '. Open briefing') + '" aria-describedby="missionDesc' + i + '">' +
               (p.thumb ? '<span class="mission-thumb" aria-hidden="true"><img src="' + esc(p.thumb) + '" alt="" width="720" height="405" loading="lazy" decoding="async" /></span>' : '') +
@@ -87,14 +101,70 @@
         '</ol>';
 
       const ol = host.querySelector('.missions');
+      const filterBtns = U.qsa('.mission-filter', host);
+      const viewBtns = U.qsa('.mission-view', host);
+      const missionItems = U.qsa('.mission-item', host);
 
-      /* rows (fine pointer + wide) or cards (touch / narrow) */
+      function getFilteredProjects() {
+        if (activeFilter === 'all') return projects;
+        return projects.filter(p => (p.category || 'game') === activeFilter);
+      }
+
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cat = btn.dataset.filter || 'all';
+          activeFilter = cat;
+          filterBtns.forEach(b => {
+            const on = b === btn;
+            b.classList.toggle('is-active', on);
+            b.setAttribute('aria-pressed', String(on));
+          });
+          let shown = 0;
+          missionItems.forEach(li => {
+            const match = cat === 'all' || li.dataset.cat === cat;
+            li.hidden = !match;
+            if (match) {
+              li.classList.add('is-in');
+              shown++;
+            }
+          });
+          if (meta) meta.textContent = U.pad(shown) + ' projects · ' + (env.fine ? 'click' : 'tap') + ' to open';
+          dismiss();
+          GK.sfx('toggle');
+          GK.scroll.measure();
+        });
+      });
+
+      /* rows (fine pointer + wide + userViewPref === 'rows') or cards (touch / narrow / Bento selected) */
       let rowMode = false;
       function applyMode() {
-        rowMode = env.fine && window.innerWidth >= 880;
+        const canRows = env.fine && window.innerWidth >= 880;
+        rowMode = canRows && userViewPref === 'rows';
         host.classList.toggle('is-cards', !rowMode);
+        viewBtns.forEach(b => {
+          const on = b.dataset.view === (rowMode ? 'rows' : 'cards');
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-pressed', String(on));
+        });
         if (!rowMode) { hoverRow = null; focusRow = null; sync(); }
       }
+
+      viewBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          userViewPref = btn.dataset.view === 'cards' ? 'cards' : 'rows';
+          applyMode();
+          GK.sfx('toggle');
+          GK.scroll.measure();
+        });
+      });
+
+      /* Expose view toggle for Ship Console */
+      GK.toggleMissionView = function () {
+        userViewPref = userViewPref === 'rows' ? 'cards' : 'rows';
+        applyMode();
+        GK.scroll.measure();
+        return userViewPref;
+      };
 
       /* ── cursor-following preview ── */
       const PW = 360, PH = 225, EDGE = 12, TOP = 84;
@@ -134,7 +204,7 @@
           img.classList.add('is-reset');
           img.classList.remove('is-on');
           img.style.zIndex = String(++pv.z);
-          void img.offsetWidth; // commit the hidden state so the wipe restarts (once per row change)
+          void img.offsetWidth;
           img.classList.remove('is-reset');
           img.classList.add('is-on');
         }
@@ -171,7 +241,6 @@
         pv.dockDocY = r.top + window.scrollY + r.height / 2 - PH / 2;
       }
 
-      /* one place decides which row is "hot": the pointer wins over keyboard focus */
       function sync() {
         const row = hoverRow || focusRow;
         if (row !== activeRow) {
@@ -194,7 +263,6 @@
 
       function tick(state, dt) {
         if (!pv.el) return;
-        /* the page moved under a resting pointer: re-check what it is over once scrolling settles */
         if (Math.abs(state.velocity) > 40) scrolled = true;
         else if (scrolled) { scrolled = false; if (hoverRow) { hoverRow = rowAt(mx, my); sync(); } }
 
@@ -214,7 +282,6 @@
 
         if (pv.snap || env.reduced) { pv.x = tx; pv.y = ty; pv.r = 0; pv.snap = false; }
         else {
-          /* 0.12 per frame at 60fps ⇒ λ ≈ 7.67; the lag doubles as horizontal velocity for the swing */
           pv.x = damp(pv.x, tx, 7.67, dt);
           pv.y = damp(pv.y, ty, 7.67, dt);
           pv.r = damp(pv.r, clamp((tx - pv.x) * 0.04, -8, 8), 10, dt);
@@ -251,7 +318,6 @@
           bus.on('nav', dismiss);
           bus.on('visibility', v => { if (v && v.hidden) dismiss(); });
 
-          /* thumbnails for the preview are fetched only once the sector is within one viewport */
           let stopWatch = function () {};
           stopWatch = U.onVisible(section, visible => { if (visible) { stopWatch(); buildPreview(); } }, { rootMargin: '100% 0px' });
           if (pv.el) stopWatch();
@@ -263,7 +329,8 @@
           const item = projects[parseInt(row.dataset.index, 10)];
           if (!item) return;
           dismiss();
-          GK.modal.open(item, { from: row, collection: projects });
+          const filtered = getFilteredProjects();
+          GK.modal.open(item, { from: row, collection: filtered.length ? filtered : projects });
         });
       }
 
@@ -326,7 +393,7 @@
         if (replay) {
           if (env.reduced || !g.live || now < g.busyUntil) return;
           g.el.classList.remove('is-live');
-          void g.el.offsetWidth; // restart the sweep (one read per hover)
+          void g.el.offsetWidth;
           g.el.style.setProperty('--step', Math.round(Math.min(120, 360 / g.n)) + 'ms');
           g.el.style.setProperty('--sweep', '600ms');
           if (g.num && GK.fx && GK.fx.count) { g.num.dataset.duration = '600'; GK.fx.count(g.num); }
@@ -395,7 +462,6 @@
         if (item) GK.modal.open(item, { from: btn, collection: items });
       });
 
-      /* the log prints line by line once its card is revealed; one soft tick per line, never overlapping */
       let lastTick = 0;
       U.qsa('.deploy', host).forEach((card, i) => {
         whenRevealed(card, () => {
@@ -419,7 +485,6 @@
       GK.scan(host);
     }
 
-    /* each sector stands alone: a fault in one never blanks the other two */
     [initMissions, initGauges, initDeployments].forEach(fn => {
       try { fn(); } catch (err) { console.error('[GK] voyage-c: ' + fn.name + ' failed', err); }
     });
