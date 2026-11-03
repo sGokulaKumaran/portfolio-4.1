@@ -143,6 +143,7 @@
         desc: 'A complete transportation management and live vehicle tracking platform featuring GPS tracking, multi-tier roles (passengers, drivers, and organization fleet admins), session-based ride assignments, and real-time telemetry built with Java, Spring Boot, and React.',
         tags: ['Java', 'Spring Boot', 'React', 'WebSocket', 'Full-Stack', 'GPS Telemetry'],
         listTags: ['Java', 'Spring Boot', 'React', 'WebSocket'],
+        link: 'https://ride-wise.pages.dev',
       },
       {
         kind: 'project', id: 'portfolio-v4', category: 'web', num: '08',
