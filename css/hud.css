@@ -343,6 +343,7 @@ html.is-reduced .orbit-node[aria-current]::after { animation: none; transform: t
   bottom: calc(env(safe-area-inset-bottom, 0px) + 30px);
   width: -moz-fit-content; width: fit-content; max-width: calc(100vw - 2rem); margin-inline: auto;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
+  contain: layout style;   /* a toast arriving or leaving re-lays-out only this stack */
 }
 .toast {
   display: inline-flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.95rem; max-width: 100%;

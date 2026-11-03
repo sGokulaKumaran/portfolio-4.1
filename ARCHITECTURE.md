@@ -57,20 +57,25 @@ and the `panel` class. Each `GK.SECTORS[i]` has `{ index, id, key, name, label, 
 
 ```
 GK.env      { fine, touch, reduced, mobile, webgl, gpu ('strong'|'weak'|'soft'|'unknown'), lowPower,
-              lite (light rendering path: phones / weak GPUs; cosmos may switch it on at runtime), dpr, w, h }
+              lite (= touch device or perf level ≤ 1; follows GK.perf), dpr, w, h }
+GK.perf     { level 0..3 (0 Eco · 1 Balanced · 2 High · 3 Ultra), pinned (null = Auto), names,
+              name(), dpr() (2D canvas cap), idleGap() (s between idle canvas redraws, 0 = every frame),
+              apply(level) (governor/internal), pin(level|null) (visitor choice, remembered), cycle() }
 GK.state    { time, dt, frame, scrollY, scrollMax, progress, velocity (px/s), speed 0..1,
               warp 0..1, flow 0..1 (= max(speed, warp), 0 when reduced motion),
               sector 0..9, sectorT 0..1, sectorF (continuous), wormhole 0..1,
               palette { a:[r,g,b], b:[r,g,b], dim }   ← already cross-faded per frame,
               pointer { x, y (px), nx, ny (-1..1, y down), sx, sy (smoothed), down, active },
               audio { level, bass, mid, high } 0..1   ← written by audio.js,
-              quality 0|1|2, entered, modalOpen, paused }
+              quality 0|1|2 (cosmos shader tier), lastInput (performance.now() of last input),
+              entered, modalOpen, paused }
 GK.bus      .on(evt, fn) → off()   .once(evt, fn)   .off(evt, fn)   .emit(evt, data)
 GK.ticker   .add(fn(state, dt), order = 10) → remove()      // the ONLY requestAnimationFrame loop
 GK.scroll   .measure()  .teleport(y)  .topOf(indexOrId)  .indexOf(idOrKey)  .panels()
 GK.warp(strength 0..1, durationMs)      // drives state.warp, html.is-warping, warp:start / warp:end
 GK.util     clamp lerp damp(a,b,lambda,dt) map smoothstep rand pick qs qsa pad esc el(tag, attrs, kids)
-            debounce throttle onVisible(el, cb(visible)) fitCanvas(canvas, maxDpr, scale) isTyping(evt)
+            debounce throttle onVisible(el, cb(visible), opts) (pooled: one observer per option set)
+            fitCanvas(canvas, maxDpr, scale) isTyping(evt)
             hexToRgb easeOutCubic easeInOutCubic easeOutExpo
 GK.store    .get(key, fallback)  .set(key, value)           // localStorage, never throws
 GK.data     person, social, roles, tags, education[], projects[], metrics[], internships[],
@@ -114,7 +119,9 @@ GK.openSecret(source)         extras  open the secret panel
 | `audio:state` | `{ music: bool, sfx: bool }` | audio, whenever a toggle changes |
 | `measure`, `resize`, `visibility` | —, `{ w, h }`, `{ hidden }` | core |
 | `cosmos:ready` | `{ webgl, tier }` | cosmos, after its first real frame (also `GK.cosmos.ready`) |
-| `lite` | `{ lite: true }` | cosmos, when the governor drops to tier 0 and switches the site to the light path (canvases re-fit, audio trims voices) |
+| `perf` | `{ level, prev }` | core (`GK.perf.apply`), whenever the performance level changes — modules re-read their budget |
+| `perf:pin` | `{ level \| null }` | core, when the visitor pins a level or returns to Auto (cosmos re-targets its tier) |
+| `lite` | `{ lite: true }` | core, when the site enters the light path (audio trims voices) |
 | `media:play` / `media:stop` | — | flow, while a briefing video plays with sound (music ducks) |
 | `reveal` | element | fx |
 
@@ -164,7 +171,25 @@ Components: `.panel`, `.panel-inner`, `.grid-2`, `.sec-head / .sec-kicker / .sec
 `.hud-label`, `.lead`, `.legible`, `.text-glow`, `.sr-only`.
 
 `<html>` state classes: `js is-fine|is-coarse is-touch is-reduced no-webgl is-mobile is-loading
-is-booted is-entered is-warping has-reveal is-lite`, plus `data-at="<sector key>"` (e.g. `html[data-at="missions"]`).
+is-booted is-entered is-warping has-reveal is-lite perf-0|perf-1|perf-2|perf-3`, plus `data-at="<sector key>"`
+(e.g. `html[data-at="missions"]`). Sectors out of view carry `.is-offstage` (fx.js), which pauses their decorative loops.
+
+## Performance levels (`GK.perf`)
+
+One level for the whole site, chosen per device and adjusted live:
+
+- **Start:** core guesses from the GPU renderer name (`env.gpu`), touch, memory and Save-Data — conservative where
+  the guess is weak (phones and integrated GPUs start at Balanced and prove their way up). A pinned level wins.
+- **Live:** cosmos' frame-time governor walks one ladder — Eco (tier 0 at 30 fps) → Balanced (tier 0) → High (tier 1)
+  → Ultra (tier 2), with resolution rungs inside each — down fast (sustained > ~50 ms frames drop a whole tier),
+  up slowly (5 s of clean frames per step), with a lockout that doubles if a step up immediately fails. It ignores
+  frames while an overlay is open, during warps and while the idle saver is active.
+- **Idle saver:** on Balanced/Eco and on touch devices, 8 s without input paces the backdrop at 30 fps; any input restores it.
+- **What each level changes:** backdrop tier/fps (cosmos), 2D canvas resolution and idle frame rate (`perf.dpr()`,
+  `perf.idleGap()`), the hero weight wave's update rate and weight grid, backdrop-filter blur (`is-lite`), audio voice
+  budget. No feature is removed at any level.
+- **Rules:** heavy effects read `GK.perf.level` live and listen to `perf`; never add a resting 3D transform or
+  `will-change` (they promote layers on every device) — apply them only while the effect is active, as tilt/magnet do.
 
 ## Ground rules for every module
 

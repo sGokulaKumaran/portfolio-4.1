@@ -58,7 +58,7 @@
       if (!ctx) return null;
       const s = { canvas, ctx, w: 0, h: 0, dpr: 1, visible: false, dirty: true };
       s.fit = function () {
-        const d = U.fitCanvas(canvas, env.lite ? 1.25 : 1.5);
+        const d = U.fitCanvas(canvas, GK.perf.dpr());
         if (d.w < 2 || d.h < 2) return;
         s.w = d.w; s.h = d.h; s.dpr = d.dpr; s.dirty = true;
         if (onLayout) onLayout(s);
@@ -72,16 +72,17 @@
       s.run = function (draw) {
         U.onVisible(canvas, v => { s.visible = v; if (v) s.fit(); });
         bus.on('resize', s.fit);
-        bus.on('lite', s.fit);
+        bus.on('perf', s.fit);
         if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(s.fit).catch(() => {});
         let acc = 0;
         GK.ticker.add((st, dt) => {
           if (!s.visible || !s.w) return;
           if (env.reduced && !s.dirty) return;
-          /* lite: ~30 fps while idle, full rate while the visitor drags/presses */
-          if (env.lite && !s.dirty && !st.pointer.down) {
+          /* Balanced / Eco: ~30 fps while idle, full rate while the visitor drags/presses */
+          const idleGap = GK.perf.idleGap();
+          if (idleGap && !s.dirty && !st.pointer.down) {
             acc += dt;
-            if (acc < 1 / 31) return;
+            if (acc < idleGap) return;
             dt = Math.min(acc, 0.1);
           }
           acc = 0;

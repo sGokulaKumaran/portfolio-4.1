@@ -257,6 +257,7 @@ void main(){
   const FRAME_MS = 1000 / 60;   // never redraw faster than 60 fps (120/144 Hz screens would double the GPU work)
   const ECO_MS = 1000 / 30;     // last resort at the lowest tier and rung
   const GOV_N = 30;             // frames per governor decision
+  const IDLE_S = 8;             // seconds without input before light devices pace the backdrop at 30 fps
   const PRE_ENTER_GAIN = 0.35;
   const BH_PARALLAX = 0.6;
   const PLANET_PARALLAX = 0.85;
@@ -274,7 +275,7 @@ void main(){
     let glCanvas = null, gl = null, prog = null, parallel = null, pending = null;
     let mode = 'idle';
     let tier = clamp(state.quality | 0, 0, 2), tierCeil = 2, userTier = false, rung = LADDER.length - 1;
-    let shown = false, force = true, sizePending = true, busy = false, eco = false, drawAcc = 0;
+    let shown = false, force = true, sizePending = true, busy = false, eco = false, drawAcc = 0, idleNow = false, overlayNow = false;
     let fallback = null;
     let visualMode = 0, visualModeSmooth = 0;
 
@@ -293,27 +294,19 @@ void main(){
     const shower = { left: 0, clock: 0, k: 0 };
     const ripple = { x: 0, y: 0, t: 0, dur: 1.35, amp: 0, on: false };
 
-    const gov = { last: 0, ema: 16.7, n: 0, hold: 30, refresh: 16.7, boot: [], good: 0, floorHits: 0, upAt: -1e9, lockUntil: 0, lockSpan: 30000 };
+    const gov = { last: 0, ema: 16.7, n: 0, hold: 30, refresh: 16.7, boot: [], good: 0, floorHits: 0, awful: 0, upAt: -1e9, lockUntil: 0, lockSpan: 30000 };
 
     /* ───────────────────────── public API ───────────────────────── */
     const api = (GK.cosmos = {
       ready: false,
-      setQuality(q) {
-        tier = clamp(Math.round(+q) || 0, 0, 2);
-        if (reduced) tier = Math.min(tier, 1);
-        userTier = true;
-        state.quality = tier;
-        eco = false;
-        rung = tier === 2 ? LADDER.length - 1 : tier === 1 ? 3 : 1;
-        gov.hold = 30; gov.good = 0; gov.floorHits = 0;
-        sizePending = true; force = true;
-      },
+      /* shader tier 0..2 → pins the matching site level (High/Balanced/... — see GK.perf) */
+      setQuality(q) { GK.perf.pin(clamp(Math.round(+q) || 0, 0, 2) + 1); },
+      /* Auto → Ultra → High → Balanced → Eco → Auto */
       cycleQuality() {
-        const next = (tier + 1) % 3;
-        api.setQuality(next);
+        const p = GK.perf.cycle();
         GK.sfx('toggle');
-        GK.toast('Render Engine · Tier ' + next + (next === 2 ? ' (Ultra)' : next === 1 ? ' (Balanced)' : ' (Eco)'), { tone: 'info' });
-        return next;
+        GK.toast('Render quality · ' + (p == null ? 'Auto (adapts to this device)' : GK.perf.names[p] + ' (locked)'), { tone: 'info' });
+        return p;
       },
       setMode(m) {
         visualMode = clamp(Math.round(+m) || 0, 0, 2);
@@ -355,7 +348,7 @@ void main(){
         force = true;
       },
       stats() {
-        return { fps: Math.round(1000 / Math.max(1, gov.ema)), scale: Math.round(view.pr * 100) / 100, tier: tier, eco: eco, lite: !!env.lite, mode: MODE_NAMES[visualMode], webgl: mode === 'run' || mode === 'compile' };
+        return { fps: Math.round(1000 / Math.max(1, gov.ema)), scale: Math.round(view.pr * 100) / 100, tier: tier, eco: eco, idle: idleNow, level: GK.perf.name(), pinned: GK.perf.pinned != null, lite: !!env.lite, mode: MODE_NAMES[visualMode], webgl: mode === 'run' || mode === 'compile' };
       },
       _draw(dt) { tick(state, dt == null ? 1 / 60 : dt); return api.stats(); },
     });
@@ -369,14 +362,23 @@ void main(){
       shown = true;
       target.style.opacity = '1';
     }
-    /* light path for the rest of the site (header blur, 2D canvases, audio): switched on
-       when the governor has to drop to tier 0. One-way, so it never flip-flops. */
-    function goLite() {
-      if (env.lite) return;
-      env.lite = true;
-      root.classList.add('is-lite');
-      bus.emit('lite', { lite: true });
+    /* the governor's ladder is the site's level: Eco = tier 0 at 30 fps, then tier + 1 */
+    function publish() { GK.perf.apply(eco ? 0 : tier + 1); }
+    function applyPin(lv) {
+      gov.hold = 30; gov.good = 0; gov.floorHits = 0;
+      /* back to Auto: restart from the device's own starting level (core re-applied it) */
+      if (lv == null) { userTier = false; gov.lockUntil = 0; gov.lockSpan = 30000; lv = GK.perf.level; }
+      else userTier = true;
+      tier = clamp(lv - 1, 0, reduced ? 1 : userTier ? 2 : tierCeil);
+      eco = lv === 0;
+      state.quality = tier;
+      rung = tier === 2 ? LADDER.length - 1 : 3;
+      sizePending = true; force = true;
+      publish();
     }
+    bus.on('perf:pin', d => applyPin(d ? d.level : null));
+    if (GK.perf.pinned != null) applyPin(GK.perf.pinned);
+    else eco = GK.perf.level === 0;
 
     if (!canvas) { mode = 'fallback'; state.quality = 0; announce(false); return; }
 
@@ -542,6 +544,7 @@ void main(){
       sizePending = true; force = true;
       gov.hold = 35; gov.last = 0;
       mode = 'run';
+      publish();
     }
 
     function upload() {
@@ -587,17 +590,22 @@ void main(){
       gov.ema += (ft - gov.ema) * 0.08;
       if (++gov.n < GOV_N) return;
       gov.n = 0;
-      if (busy || userTier) { gov.good = 0; return; }
+      /* the idle saver halves the draw rate, and an open overlay (game, briefing, console) brings
+         its own load: neither frame time says anything about how the backdrop runs */
+      if (busy || userTier || idleNow || overlayNow) { gov.good = 0; gov.awful = 0; return; }
+      gov.awful = gov.ema > 40 ? gov.awful + 1 : 0;
 
-      /* step down below ~50 fps; eco (30 fps cap) is the rung under the lowest one */
+      /* step down below ~50 fps (faster the worse it is); eco (30 fps cap) is the rung under the lowest one */
       if (gov.ema > Math.max(19.5, gov.refresh * 1.2)) {
         gov.good = 0;
         if (now - gov.upAt < 3000) {
           gov.lockUntil = now + gov.lockSpan;
           gov.lockSpan = Math.min(240000, gov.lockSpan * 2);
         }
-        if (rung > 0) { rung--; gov.floorHits = 0; }
-        else if (++gov.floorHits >= 2 && tier > 0) { tier--; rung = 2; gov.floorHits = 0; state.quality = tier; if (tier === 0) goLite(); }
+        /* a whole tier at once only when it is sustained (two checks running), not one burst */
+        if (gov.awful >= 2 && tier > 0) { tier--; rung = 2; gov.floorHits = 0; gov.awful = 0; state.quality = tier; }
+        else if (rung > 0) { rung = Math.max(0, rung - (gov.ema > 30 ? 2 : 1)); gov.floorHits = 0; }
+        else if (++gov.floorHits >= 2 && tier > 0) { tier--; rung = 2; gov.floorHits = 0; state.quality = tier; }
         else if (tier === 0 && !eco && gov.floorHits >= 2) { eco = true; gov.floorHits = 0; }
         else return;
       } else if (gov.ema < gov.refresh * 1.06 + 0.4) {
@@ -611,6 +619,7 @@ void main(){
         gov.upAt = now;
       } else { gov.good = 0; return; }
       sizePending = true; force = true; gov.hold = 30;
+      publish();
     }
 
     function overlayOpen() {
@@ -740,14 +749,20 @@ void main(){
       if (mode !== 'run') return;
 
       const overlay = overlayOpen();
+      overlayNow = overlay;
       if (!reduced) govern(performance.now());
       if (sizePending) applySize();
       integrate(st, dt, overlay);
 
+      /* idle saver: on light devices a reader who has not touched anything for a while gets the
+         slow-drifting backdrop at 30 fps (less heat → no thermal throttling); any input restores 60 */
+      idleNow = entered && !busy && !flash.on && !ripple.on && shower.left <= 0 && !overlay
+        && (GK.perf.level <= 1 || !env.fine) && performance.now() - st.lastInput > IDLE_S * 1000;
+
       if (reduced) { if (!force && same()) return; }
       else if (!force) {
         /* time keeps integrating every tick; only the GPU draw is paced (half rate under overlays) */
-        const gap = (eco ? ECO_MS : FRAME_MS) * (overlay ? 2 : 1);
+        const gap = (eco || idleNow ? ECO_MS : FRAME_MS) * (overlay ? 2 : 1);
         drawAcc += dt * 1000;
         if (drawAcc + 2 < gap) return;
         drawAcc = Math.min(Math.max(0, drawAcc - gap), gap);

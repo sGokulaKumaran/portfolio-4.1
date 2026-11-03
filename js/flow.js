@@ -582,7 +582,7 @@
       (d.certs || []).forEach(x => add('Records', 'record', x.title, 'Certificate · ' + (x.meta || ''), [x.short, 'certification credential'].concat(x.tags || []).join(' '), brief(x)));
 
       add('Systems', 'sector', 'Cycle Cosmos Shader Mode', () => (GK.cosmos && GK.cosmos.getModeName ? GK.cosmos.getModeName() : 'Standard'), 'cosmos shader nebula black hole visual mode', () => { if (GK.cosmos && GK.cosmos.cycleMode) GK.cosmos.cycleMode(); }, { keep: true, kbd: 'V' });
-      add('Systems', 'sector', 'Cycle Render Quality Tier', () => 'Tier ' + state.quality, 'render quality tier performance fps webgl', () => { if (GK.cosmos && GK.cosmos.cycleQuality) GK.cosmos.cycleQuality(); }, { keep: true });
+      add('Systems', 'sector', 'Cycle Render Quality', () => (GK.perf.pinned == null ? 'Auto · ' : '') + GK.perf.name(), 'render quality tier performance fps webgl eco balanced high ultra auto', () => { if (GK.cosmos && GK.cosmos.cycleQuality) GK.cosmos.cycleQuality(); }, { keep: true });
       add('Systems', 'mission', 'Toggle Missions Layout (Table / Bento)', 'Sector 04', 'bento grid table layout work view', () => {
         if (GK.toggleMissionView) GK.toggleMissionView();
         navTo(4);

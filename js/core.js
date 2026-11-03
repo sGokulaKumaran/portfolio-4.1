@@ -64,13 +64,39 @@
     return function () { const now = performance.now(); if (now - last >= ms) { last = now; fn.apply(this, arguments); } };
   }
 
-  /* cb(isVisible, entry) whenever el enters/leaves the (padded) viewport. Returns a disposer. */
+  /* cb(isVisible, entry) whenever el enters/leaves the (padded) viewport. Returns a disposer.
+     Callers with the same options share one pooled IntersectionObserver: each observer costs
+     an intersection pass on every scroll frame, so twenty one-target observers are waste. */
+  const ioPool = new Map();   // options key → { io, subs: Map(target → Set(cb)), last: Map(target → entry) }
   function onVisible(target, cb, opts) {
     if (!target) return () => {};
     if (!('IntersectionObserver' in window)) { cb(true); return () => {}; }
-    const io = new IntersectionObserver(entries => entries.forEach(e => cb(e.isIntersecting, e)), Object.assign({ rootMargin: '120px 0px' }, opts || {}));
-    io.observe(target);
-    return () => io.disconnect();
+    const o = Object.assign({ rootMargin: '120px 0px' }, opts || {});
+    const key = o.rootMargin + '|' + String(o.threshold == null ? 0 : o.threshold);
+    let pool = ioPool.get(key);
+    if (!pool) {
+      const p = { subs: new Map(), last: new Map() };
+      p.io = new IntersectionObserver(entries => entries.forEach(e => {
+        p.last.set(e.target, e);
+        const set = p.subs.get(e.target);
+        if (set) Array.from(set).forEach(fn => fn(e.isIntersecting, e));
+      }), o);
+      ioPool.set(key, pool = p);
+    }
+    let set = pool.subs.get(target);
+    if (!set) { pool.subs.set(target, set = new Set()); pool.io.observe(target); }
+    else if (pool.last.has(target)) {
+      /* already observed: the observer will not report it again, so replay its last state */
+      const e = pool.last.get(target);
+      Promise.resolve().then(() => { if (set.has(cb)) cb(e.isIntersecting, e); });
+    }
+    set.add(cb);
+    return () => {
+      if (!set.delete(cb) || set.size) return;
+      pool.subs.delete(target);
+      pool.last.delete(target);
+      pool.io.unobserve(target);
+    };
   }
 
   /* Size a canvas' backing store to its CSS box. Returns CSS + pixel dims. */
@@ -145,8 +171,29 @@
     w: window.innerWidth,
     h: window.innerHeight,
   });
-  env.lite = !env.fine || env.lowPower || env.gpu === 'weak' || env.gpu === 'soft';
-  root.classList.add('js', env.fine ? 'is-fine' : 'is-coarse');
+  /* ───────────────────────── performance level ─────────────────────────
+     One device-capability level for the whole site: 3 Ultra · 2 High · 1 Balanced · 0 Eco.
+     The start is a guess from the hardware, kept conservative where the guess is weak;
+     cosmos' frame-time governor then moves it both ways (it owns the GPU ladder, so
+     level = eco ? 0 : tier + 1) and every module adapts on the 'perf' event. A visitor can
+     pin a level from the HUD / console; the pin is remembered. */
+  const LEVELS = ['Eco', 'Balanced', 'High', 'Ultra'];
+  function startLevel() {
+    if (env.gpu === 'soft') return 0;
+    const mem = navigator.deviceMemory || 8;
+    const saveData = !!(navigator.connection && navigator.connection.saveData);
+    let lv;
+    if (!env.fine) lv = mem <= 2 ? 0 : 1;          // phones / tablets prove their way up to High
+    else if (env.gpu === 'weak') lv = 1;           // integrated GPU: start light, governor lifts it
+    else if (env.gpu === 'strong') lv = 3;
+    else lv = env.lowPower ? 2 : 3;
+    return saveData ? Math.max(0, lv - 1) : lv;
+  }
+  const pinned0 = store.get('perf', null);
+  const validLevel = v => typeof v === 'number' && v >= 0 && v <= 3;
+  const level0 = validLevel(pinned0) ? pinned0 : startLevel();
+  env.lite = !env.fine || level0 <= 1;
+  root.classList.add('js', env.fine ? 'is-fine' : 'is-coarse', 'perf-' + level0);
   if (env.touch) root.classList.add('is-touch');
   if (env.reduced) root.classList.add('is-reduced');
   if (!env.webgl) root.classList.add('no-webgl');
@@ -193,7 +240,8 @@
     palette: { a: SECTORS[0].rgbA.slice(), b: SECTORS[0].rgbB.slice(), dim: SECTORS[0].dim }, // CPU cross-faded sector colours
     pointer: { x: env.w / 2, y: env.h / 2, nx: 0, ny: 0, sx: 0, sy: 0, down: false, active: false }, // px, normalised -1..1 (y down), smoothed
     audio: { level: 0, bass: 0, mid: 0, high: 0 }, // written by audio.js each frame
-    quality: env.mobile || env.gpu === 'soft' ? 0 : env.lite ? 1 : 2,  // 0 low · 1 medium · 2 high (cosmos may lower or raise it)
+    quality: Math.max(0, level0 - 1),  // cosmos shader tier 0 low · 1 medium · 2 high (follows GK.perf)
+    lastInput: 0,       // performance.now() (ms, wall clock) of the last pointer / key / wheel / scroll input
     entered: false,     // true once the visitor pressed ENGAGE on the loader
     modalOpen: false,   // written by hud.js
     paused: false,      // true while an overlay (e.g. mini-game) wants background work idle
@@ -209,6 +257,44 @@
       const l = listeners[evt];
       if (!l) return;
       l.slice().forEach(fn => { try { fn(data); } catch (e) { console.error('[GK] listener for "' + evt + '" failed', e); } });
+    },
+  });
+
+  const perf = (GK.perf = {
+    names: LEVELS,
+    level: level0,
+    pinned: validLevel(pinned0) ? pinned0 : null,   // null = automatic
+    name() { return LEVELS[perf.level]; },
+    /* backing-store cap for decorative 2D canvases */
+    dpr() { return [1, 1.25, 1.25, 1.5][perf.level]; },
+    /* seconds between idle redraws of decorative canvases (0 = every frame) */
+    idleGap() { return perf.level <= 1 ? 1 / 31 : 0; },
+    apply(lv) {
+      lv = clamp(Math.round(+lv) || 0, 0, 3);
+      if (lv === perf.level) return;
+      const prev = perf.level;
+      root.classList.remove('perf-' + prev);
+      root.classList.add('perf-' + lv);
+      perf.level = lv;
+      const lite = !env.fine || lv <= 1;
+      if (lite !== env.lite) {
+        env.lite = lite;
+        root.classList.toggle('is-lite', lite);
+        if (lite) bus.emit('lite', { lite: true });
+      }
+      bus.emit('perf', { level: lv, prev });
+    },
+    pin(lv) {
+      perf.pinned = validLevel(lv) ? lv : null;
+      store.set('perf', perf.pinned);
+      perf.apply(perf.pinned != null ? perf.pinned : startLevel());
+      bus.emit('perf:pin', { level: perf.pinned });   // cosmos re-targets its tier (and may correct the level)
+      return perf.pinned;
+    },
+    /* Auto → Ultra → High → Balanced → Eco → Auto */
+    cycle() {
+      const order = [null, 3, 2, 1, 0];
+      return perf.pin(order[(order.indexOf(perf.pinned) + 1) % order.length]);
     },
   });
 
@@ -251,6 +337,7 @@
     prevY = y;
     state.scrollY = y;
     state.velocity = damp(state.velocity, raw, 10, dt);
+    if (raw > 30 || raw < -30) state.lastInput = performance.now();
     state.speed = clamp(Math.abs(state.velocity) / 3200);
     state.progress = clamp(y / state.scrollMax);
 
@@ -303,8 +390,13 @@
     ptr.nx = (e.clientX / window.innerWidth) * 2 - 1;
     ptr.ny = (e.clientY / window.innerHeight) * 2 - 1;
     ptr.active = true;
+    state.lastInput = performance.now();
   }, { passive: true });
-  window.addEventListener('pointerdown', () => { ptr.down = true; }, { passive: true });
+  window.addEventListener('pointerdown', () => { ptr.down = true; state.lastInput = performance.now(); }, { passive: true });
+  const markInput = () => { state.lastInput = performance.now(); };
+  window.addEventListener('keydown', markInput, { passive: true });
+  window.addEventListener('wheel', markInput, { passive: true });
+  window.addEventListener('touchstart', markInput, { passive: true });
   window.addEventListener('pointerup', () => { ptr.down = false; }, { passive: true });
   window.addEventListener('pointercancel', () => { ptr.down = false; }, { passive: true });
 

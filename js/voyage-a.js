@@ -66,9 +66,16 @@
       if (letters.length) name.classList.add('is-split');
     }
 
+    /* Weights snap to a grid: every distinct 'wght' value is a new font instance to shape and
+       rasterise at display size, so a small cached set is far cheaper than a fresh value each
+       write. Ultra keeps a fine grid; lighter levels use a coarser one. */
     const writeWeight = l => {
-      l.last = Math.round(l.w);
-      l.el.style.fontVariationSettings = "'wght' " + l.last;
+      const q = GK.perf.level >= 3 ? 10 : 25;
+      const v = Math.round(l.w / q) * q;
+      l.last = l.w;
+      if (v === l.shown) return;
+      l.shown = v;
+      l.el.style.fontVariationSettings = "'wght' " + v;
     };
 
     function measureLetters() {
@@ -85,7 +92,7 @@
     function lockSlots() {
       if (!letters.length) return;
       name.style.removeProperty('--va-fit');
-      letters.forEach(l => { l.el.style.width = ''; l.el.style.fontVariationSettings = "'wght' " + W_MAX; });
+      letters.forEach(l => { l.el.style.width = ''; l.el.style.fontVariationSettings = "'wght' " + W_MAX; l.shown = W_MAX; });
       const fs = parseFloat(getComputedStyle(name).fontSize) || 16;
       const widths = letters.map(l => l.el.getBoundingClientRect().width);
       const rowWidth = [];
@@ -172,7 +179,7 @@
       letters.forEach(l => { l.born = t + l.i * 0.04; l.w = W_MIN; });
     });
 
-    let visible = true, scrolled = false, lastP = -1;
+    let visible = true, scrolled = false, lastP = -1, waveAcc = 0;
     onVisible(panel, v => { visible = v; });
 
     GK.ticker.add((s, dt) => {
@@ -197,6 +204,20 @@
         }
       }
       if (p >= 1 || !introStarted) return;
+
+      /* Every weight write re-lays-out and repaints the giant glyphs, so this is the most
+         expensive effect on the page. Below Ultra it runs at a lower rate, and on touch or
+         light devices it holds still while the page moves (the wave is a slow 6 s breath;
+         pausing it mid-swipe is invisible, a dropped scroll frame is not). */
+      const lv = GK.perf.level;
+      if ((!env.fine || lv <= 1) && (s.pointer.down || s.speed > 0.004 || p > 0)) { waveAcc = 0; return; }
+      const gap = lv >= 3 ? 0 : lv === 2 ? 1 / 31 : 1 / 16;
+      if (gap) {
+        waveAcc += dt;
+        if (waveAcc < gap) return;
+        dt = Math.min(waveAcc, 0.1);
+        waveAcc = 0;
+      }
 
       const ptr = s.pointer, t = s.time, sy = s.scrollY;
       const wave = !env.fine || !ptr.active;
@@ -274,7 +295,7 @@
     let ptrIn = false, mx = 0, my = 0;
 
     function fit() {
-      const f = fitCanvas(canvas, env.lite ? 1.25 : 1.5);
+      const f = fitCanvas(canvas, GK.perf.dpr());
       W = canvas.clientWidth || f.w; H = canvas.clientHeight || f.h;
       ready = W > 2 && H > 2;
       if (!ready) return;
@@ -592,7 +613,7 @@
     fit();
     onVisible(canvas, v => { visible = v; if (v) dirty = true; });
     bus.on('resize', fit);
-    bus.on('lite', fit);
+    bus.on('perf', fit);
     bus.on('measure', () => { if (canvas.clientWidth !== W || canvas.clientHeight !== H) fit(); });
     bus.on('sector', () => { dirtyUntil = state.time + 3; });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { stale = true; dirty = true; }).catch(() => {});
@@ -611,10 +632,11 @@
         step(0);
         draw(s.time, 0);
       } else {
-        /* lite: ~30 fps while idle, full rate while dragging */
-        if (env.lite && !dragging && !dirty) {
+        /* Balanced / Eco: ~30 fps while idle, full rate while dragging or hovering */
+        const idleGap = GK.perf.idleGap();
+        if (idleGap && !dragging && !dirty) {
           liteAcc += dt;
-          if (liteAcc < 1 / 31) return;
+          if (liteAcc < idleGap) return;
           dt = Math.min(liteAcc, 0.1);
         }
         liteAcc = 0;

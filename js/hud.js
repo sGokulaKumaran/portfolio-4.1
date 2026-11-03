@@ -103,7 +103,7 @@
           const report = d => {
             const gl = d && typeof d.webgl === 'boolean' ? d.webgl : env.webgl;
             const tier = d && d.tier != null ? d.tier : state.quality;
-            done(gl ? 'COMPILED · TIER ' + tier : 'FALLBACK', gl ? 'ok' : 'warn');
+            done(gl ? 'COMPILED · ' + GK.perf.name().toUpperCase() : 'FALLBACK', gl ? 'ok' : 'warn');
           };
           if (c.ready) report(null); else offs.push(bus.once('cosmos:ready', report));
         } },
@@ -404,7 +404,7 @@
         wClock(pad(Math.floor(s / 60)) + ':' + pad(s % 60));
         const d = new Date();
         wTime(pad(d.getHours()) + ':' + pad(d.getMinutes()));
-        wTier(webgl ? 'Tier ' + st.quality : 'Fallback');
+        wTier((GK.perf.pinned == null ? 'Auto ' : '') + GK.perf.name());
       }
 
       let scrolled = false, fast = false, lastProg = -1, lastT = -1, lastShip = -1, acc = 1;

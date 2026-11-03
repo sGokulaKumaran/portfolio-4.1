@@ -139,7 +139,28 @@
     if (node.dataset.fxObserved) return;
     node.dataset.fxObserved = '1';
     if (!io) { pending.add(node); return; }
-    io.observe(node);
+    watch(node);
+  }
+  /* A reveal target is handed to the observer only once its sector is within a screen of the
+     viewport: an observer re-measures every target on every scroll frame, and most of the
+     page's reveal targets are far away at any moment. */
+  const sectors = new Map();   // sector element → { list, on, off }
+  function watch(node) {
+    const host = node.closest && node.closest('.panel, .wormhole');
+    if (!host || !io.unobserve) { io.observe(node); return; }
+    let h = sectors.get(host);
+    if (!h) {
+      h = { list: [], on: false, off: null };
+      sectors.set(host, h);
+      h.off = GK.util.onVisible(host, v => {
+        if (!v || h.on) return;
+        h.on = true;
+        h.list.forEach(n => io.observe(n));
+        h.list.length = 0;
+        if (h.off) h.off();
+      }, { rootMargin: '100% 0px' });
+    }
+    if (h.on) io.observe(node); else h.list.push(node);
   }
   function startObserving() {
     if (io) return;
@@ -147,7 +168,7 @@
     io = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } });
     }, { threshold: 0.12, rootMargin: '0px 0px -7% 0px' });
-    pending.forEach(n => io.observe(n));
+    pending.forEach(watch);
     pending.clear();
   }
 
@@ -341,6 +362,10 @@
     /* hold every reveal until the visitor has passed the loader */
     if (GK.state.entered) startObserving();
     else GK.bus.once('enter', () => setTimeout(startObserving, env.reduced ? 0 : 350));
+
+    /* sectors out of view get .is-offstage so their decorative CSS loops pause (core.css):
+       an infinite animation costs a style pass every frame even when nobody can see it */
+    qsa('.panel, .wormhole').forEach(n => GK.util.onVisible(n, v => n.classList.toggle('is-offstage', !v)));
 
     GK.bus.on('measure', measureParallax);
     GK.ticker.add(state => {
