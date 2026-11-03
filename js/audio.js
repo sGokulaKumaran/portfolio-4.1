@@ -31,7 +31,9 @@
     const env = GK.env, state = GK.state, bus = GK.bus, store = GK.store;
     const clamp = GK.util.clamp, damp = GK.util.damp, smoothstep = GK.util.smoothstep;
     const AC = window.AudioContext || window.webkitAudioContext || null;
-    const LOW = !!(env.lowPower || env.mobile);
+    /* light engine for weak devices: shorter reverb, fewer simultaneous voices, roomier
+       output buffer. Re-read when cosmos switches the site to lite (see 'lite' below). */
+    let LOW = !!(env.lowPower || env.mobile || env.lite);
 
     /* ───────────────────────── helpers ───────────────────────── */
     const rnd = (a, b) => a + Math.random() * (b - a);
@@ -71,8 +73,9 @@
 
     /* ───────────────────────── session state ───────────────────────── */
     const MASTER = 0.85, STEP = 0.5;
-    const MAXV = LOW ? 14 : 28;   // simultaneous sfx voices
-    const MAXM = LOW ? 6 : 12;    // simultaneous music event voices
+    let MAXV = LOW ? 14 : 28;     // simultaneous sfx voices
+    let MAXM = LOW ? 6 : 12;      // simultaneous music event voices
+    bus.on('lite', () => { LOW = true; MAXV = 14; MAXM = 6; });
     let ctx = null, sr = 48000, fMax = 20000, G = null, M = null, NZ = null;
     let dead = !AC;
     let prefMusic = !dead && store.get('music', true) !== false;
@@ -363,7 +366,9 @@
       if (ctx) return true;
       if (dead) return false;
       let c = null;
-      try { c = new AC({ latencyHint: 'interactive' }); } catch (e) { try { c = new AC(); } catch (e2) { c = null; } }
+      /* the smallest buffer crackles as soon as a weak device is busy; touch has no hover sounds, so it can take the roomiest */
+      const latencyHint = !LOW ? 'interactive' : env.fine ? 'balanced' : 'playback';
+      try { c = new AC({ latencyHint: latencyHint }); } catch (e) { try { c = new AC(); } catch (e2) { c = null; } }
       if (!c) { dead = true; return false; }
       try {
         ctx = c; sr = c.sampleRate || 44100; fMax = Math.min(20000, sr * 0.45);
@@ -574,9 +579,10 @@
       m.wind = layer(m, 1, 0.4, 0);
       m.bell = layer(m, 1, 0.7, 0.35);
       m.ping = layer(m, 1, 0.5, 0.8);
-      m.shimmer = LOW ? null : layer(m, 1, 0.9, 0.4);
-      m.whale = LOW ? null : layer(m, 0.3, 1, 0);
-      m.chatter = LOW ? null : layer(m, 1, 0.3, 0);
+      /* every layer plays on every device; LOW only trims voice counts and reverb length */
+      m.shimmer = layer(m, 1, 0.9, 0.4);
+      m.whale = layer(m, 0.3, 1, 0);
+      m.chatter = layer(m, 1, 0.3, 0);
 
       /* sub: root + octave + fifth through a soft saturator, slow swell */
       const subSum = keep(m, gain(0.6)), shaper = keep(m, ctx.createWaveShaper()), subLP = keep(m, biquad('lowpass', 220, 0.7)), subAmp = keep(m, gain(1));
@@ -959,7 +965,7 @@
       if (!M || !ctx || ctx.state !== 'running') return;
       const now = ctx.currentTime;
       if (nextT < now - 0.05) { const k = Math.ceil((now - nextT) / STEP); stepN += k; nextT += k * STEP; }
-      const horizon = now + (document.hidden ? 1.5 : 0.35);
+      const horizon = now + (document.hidden ? 1.5 : LOW ? 0.6 : 0.35);
       while (nextT < horizon) {
         try { onStep(stepN, nextT); } catch (e) { /* drop this step; the next one starts clean */ }
         stepN++; nextT += STEP;

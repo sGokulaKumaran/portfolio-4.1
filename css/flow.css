@@ -49,6 +49,7 @@ html.is-reduced.is-jump-out #story, html.is-reduced.is-jump-in #story { transiti
   opacity: 0; transition: opacity 220ms linear;
 }
 .briefing.is-open .briefing-veil { opacity: 1; transition-duration: 320ms; }
+html.is-lite .briefing-veil { background: rgba(5, 6, 10, 0.94); -webkit-backdrop-filter: none; backdrop-filter: none; }
 
 .briefing-panel {
   --ar: 1.6;            /* media aspect, written by flow.js once the image is known */
@@ -228,6 +229,7 @@ html.is-reduced.is-jump-out #story, html.is-reduced.is-jump-in #story { transiti
   opacity: 0; transition: opacity 180ms linear;
 }
 .console.is-open .console-veil { opacity: 1; transition-duration: 240ms; }
+html.is-lite .console-veil { background: rgba(5, 6, 10, 0.82); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .console-panel {
   position: relative;
   display: flex; flex-direction: column;

@@ -56,7 +56,8 @@ and the `panel` class. Each `GK.SECTORS[i]` has `{ index, id, key, name, label, 
 ## Runtime API (`window.GK`)
 
 ```
-GK.env      { fine, touch, reduced, mobile, webgl, lowPower, dpr, w, h }
+GK.env      { fine, touch, reduced, mobile, webgl, gpu ('strong'|'weak'|'soft'|'unknown'), lowPower,
+              lite (light rendering path: phones / weak GPUs; cosmos may switch it on at runtime), dpr, w, h }
 GK.state    { time, dt, frame, scrollY, scrollMax, progress, velocity (px/s), speed 0..1,
               warp 0..1, flow 0..1 (= max(speed, warp), 0 when reduced motion),
               sector 0..9, sectorT 0..1, sectorF (continuous), wormhole 0..1,
@@ -113,6 +114,7 @@ GK.openSecret(source)         extras  open the secret panel
 | `audio:state` | `{ music: bool, sfx: bool }` | audio, whenever a toggle changes |
 | `measure`, `resize`, `visibility` | —, `{ w, h }`, `{ hidden }` | core |
 | `cosmos:ready` | `{ webgl, tier }` | cosmos, after its first real frame (also `GK.cosmos.ready`) |
+| `lite` | `{ lite: true }` | cosmos, when the governor drops to tier 0 and switches the site to the light path (canvases re-fit, audio trims voices) |
 | `media:play` / `media:stop` | — | flow, while a briefing video plays with sound (music ducks) |
 | `reveal` | element | fx |
 
@@ -162,7 +164,7 @@ Components: `.panel`, `.panel-inner`, `.grid-2`, `.sec-head / .sec-kicker / .sec
 `.hud-label`, `.lead`, `.legible`, `.text-glow`, `.sr-only`.
 
 `<html>` state classes: `js is-fine|is-coarse is-touch is-reduced no-webgl is-mobile is-loading
-is-booted is-entered is-warping has-reveal`, plus `data-at="<sector key>"` (e.g. `html[data-at="missions"]`).
+is-booted is-entered is-warping has-reveal is-lite`, plus `data-at="<sector key>"` (e.g. `html[data-at="missions"]`).
 
 ## Ground rules for every module
 

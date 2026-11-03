@@ -213,8 +213,8 @@ void main(){
     if(uPlanet.w>.002){ vec4 pl=planet(p); col=col*(1.-pl.a*uPlanet.w)+pl.rgb*uPlanet.w; keep=pl.a*uPlanet.w*ss(1.,1.5,asp); }
     if(uSun.x>.002) col=sunrise(col,p);
     if(uBH.w>.002&&br<R*7.5) col=blackhole(col,bd,br,R);
-    if(uTier>.5){
-      float T=uTime/4.6, m=fract(T)<.19?meteor(p,asp,floor(T)+fract(T)/.19,7.3,.5):0.;
+    if(uTier>.5||uShower.x>.002){
+      float T=uTime/4.6, m=uTier>.5&&fract(T)<.19?meteor(p,asp,floor(T)+fract(T)/.19,7.3,.5):0.;
       if(uShower.x>.002){ for(int i=0;i<4;i++){ float fi=float(i); m+=uShower.x*meteor(p+vec2((fi-1.5)*.21*asp,.1-.07*fi),asp,uShower.y*(1.25+.17*fi)+fi*.37,11.+fi*3.1,0.); } }
       col+=vec3(.9,.95,1.)*m;
     }
@@ -246,12 +246,17 @@ void main(){
     ['uShower', 2], ['uCap', 3], ['uRipple', 4], ['uMode', 1],
   ];
 
+  /* The backdrop is soft (nebula, glows), so the lower tiers render fewer pixels and let
+     the browser upscale: on integrated GPUs that is the difference between 30 and 60 fps. */
   const TIERS = [
-    { dpr: 1.0, maxPx: 0.8e6 },
-    { dpr: 1.25, maxPx: 1.5e6 },
+    { dpr: 1.0, maxPx: 0.45e6 },
+    { dpr: 1.0, maxPx: 0.9e6 },
     { dpr: 1.5, maxPx: 2.3e6 },
   ];
   const LADDER = [0.5, 0.6, 0.7, 0.85, 1];
+  const FRAME_MS = 1000 / 60;   // never redraw faster than 60 fps (120/144 Hz screens would double the GPU work)
+  const ECO_MS = 1000 / 30;     // last resort at the lowest tier and rung
+  const GOV_N = 30;             // frames per governor decision
   const PRE_ENTER_GAIN = 0.35;
   const BH_PARALLAX = 0.6;
   const PLANET_PARALLAX = 0.85;
@@ -269,7 +274,7 @@ void main(){
     let glCanvas = null, gl = null, prog = null, parallel = null, pending = null;
     let mode = 'idle';
     let tier = clamp(state.quality | 0, 0, 2), tierCeil = 2, userTier = false, rung = LADDER.length - 1;
-    let shown = false, force = true, sizePending = true, halfFlip = false, busy = false;
+    let shown = false, force = true, sizePending = true, busy = false, eco = false, drawAcc = 0;
     let fallback = null;
     let visualMode = 0, visualModeSmooth = 0;
 
@@ -298,6 +303,7 @@ void main(){
         if (reduced) tier = Math.min(tier, 1);
         userTier = true;
         state.quality = tier;
+        eco = false;
         rung = tier === 2 ? LADDER.length - 1 : tier === 1 ? 3 : 1;
         gov.hold = 30; gov.good = 0; gov.floorHits = 0;
         sizePending = true; force = true;
@@ -349,7 +355,7 @@ void main(){
         force = true;
       },
       stats() {
-        return { fps: Math.round(1000 / Math.max(1, gov.ema)), scale: Math.round(view.pr * 100) / 100, tier: tier, mode: MODE_NAMES[visualMode], webgl: mode === 'run' || mode === 'compile' };
+        return { fps: Math.round(1000 / Math.max(1, gov.ema)), scale: Math.round(view.pr * 100) / 100, tier: tier, eco: eco, lite: !!env.lite, mode: MODE_NAMES[visualMode], webgl: mode === 'run' || mode === 'compile' };
       },
       _draw(dt) { tick(state, dt == null ? 1 / 60 : dt); return api.stats(); },
     });
@@ -362,6 +368,14 @@ void main(){
     function reveal(target) {
       shown = true;
       target.style.opacity = '1';
+    }
+    /* light path for the rest of the site (header blur, 2D canvases, audio): switched on
+       when the governor has to drop to tier 0. One-way, so it never flip-flops. */
+    function goLite() {
+      if (env.lite) return;
+      env.lite = true;
+      root.classList.add('is-lite');
+      bus.emit('lite', { lite: true });
     }
 
     if (!canvas) { mode = 'fallback'; state.quality = 0; announce(false); return; }
@@ -571,24 +585,27 @@ void main(){
         return;
       }
       gov.ema += (ft - gov.ema) * 0.08;
-      if (++gov.n < 45) return;
+      if (++gov.n < GOV_N) return;
       gov.n = 0;
       if (busy || userTier) { gov.good = 0; return; }
 
-      if (gov.ema > 22.0) {
+      /* step down below ~50 fps; eco (30 fps cap) is the rung under the lowest one */
+      if (gov.ema > Math.max(19.5, gov.refresh * 1.2)) {
         gov.good = 0;
         if (now - gov.upAt < 3000) {
           gov.lockUntil = now + gov.lockSpan;
           gov.lockSpan = Math.min(240000, gov.lockSpan * 2);
         }
         if (rung > 0) { rung--; gov.floorHits = 0; }
-        else if (++gov.floorHits >= 2 && tier > 0) { tier--; rung = 2; gov.floorHits = 0; state.quality = tier; }
+        else if (++gov.floorHits >= 2 && tier > 0) { tier--; rung = 2; gov.floorHits = 0; state.quality = tier; if (tier === 0) goLite(); }
+        else if (tier === 0 && !eco && gov.floorHits >= 2) { eco = true; gov.floorHits = 0; }
         else return;
       } else if (gov.ema < gov.refresh * 1.06 + 0.4) {
-        gov.good += 45 * gov.ema;
+        gov.good += GOV_N * gov.ema;
         if (gov.good < 5000 || now < gov.lockUntil) return;
         gov.good = 0;
-        if (rung < LADDER.length - 1) rung++;
+        if (eco) eco = false;
+        else if (rung < LADDER.length - 1) rung++;
         else if (tier < tierCeil) { tier++; rung = 2; state.quality = tier; }
         else return;
         gov.upAt = now;
@@ -728,7 +745,14 @@ void main(){
       integrate(st, dt, overlay);
 
       if (reduced) { if (!force && same()) return; }
-      else if (overlay && !force && (halfFlip = !halfFlip)) return;
+      else if (!force) {
+        /* time keeps integrating every tick; only the GPU draw is paced (half rate under overlays) */
+        const gap = (eco ? ECO_MS : FRAME_MS) * (overlay ? 2 : 1);
+        drawAcc += dt * 1000;
+        if (drawAcc + 2 < gap) return;
+        drawAcc = Math.min(Math.max(0, drawAcc - gap), gap);
+      }
+      if (force) drawAcc = 0;
 
       force = false;
       upload();

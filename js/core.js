@@ -101,32 +101,57 @@
 
   /* ───────────────────────── environment ───────────────────────── */
   const mq = q => (window.matchMedia ? window.matchMedia(q) : { matches: false });
+  /* The backdrop is GPU-bound, so CPU cores / RAM say little about it: read the
+     renderer name too. 'soft' = software rasteriser, 'weak' = integrated / mobile
+     GPU, 'strong' = discrete; anything unrecognised is 'unknown' and left to the
+     cosmos frame-time governor. */
+  function gpuClass(name) {
+    const r = String(name || '').toLowerCase();
+    if (!r) return 'unknown';
+    if (/swiftshader|llvmpipe|softpipe|software|basic render/.test(r)) return 'soft';
+    if (/nvidia|geforce|quadro|radeon rx|radeon pro|intel\(r\) arc|apple m\d/.test(r)) return 'strong';
+    if (/intel|mali|adreno|powervr|vivante|videocore|radeon\(tm\) graphics|radeon graphics|radeon vega|vega \d/.test(r)) return 'weak';
+    return 'unknown';
+  }
   function detectWebGL() {
     try {
       const c = doc.createElement('canvas');
       const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
-      if (!gl) return false;
+      if (!gl) return { ok: false, gpu: 'unknown' };
+      let name = '';
+      try {
+        name = String(gl.getParameter(gl.RENDERER) || '');
+        if (!name || /^webkit webgl$/i.test(name)) {
+          const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+          if (dbg) name = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
+        }
+      } catch (e) { name = ''; }
       const lose = gl.getExtension('WEBGL_lose_context');
       if (lose) lose.loseContext();
-      return true;
-    } catch (e) { return false; }
+      return { ok: true, gpu: gpuClass(name) };
+    } catch (e) { return { ok: false, gpu: 'unknown' }; }
   }
+  const gl0 = detectWebGL();
   const env = (GK.env = {
     fine: mq('(hover: hover) and (pointer: fine)').matches,
     touch: 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0,
     reduced: mq('(prefers-reduced-motion: reduce)').matches,
     mobile: window.innerWidth < 760,
-    webgl: detectWebGL(),
+    webgl: gl0.ok,
+    gpu: gl0.gpu,
     lowPower: (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4,
+    lite: false,        // light rendering path (phones, weak GPUs); cosmos may switch it at runtime
     dpr: Math.min(window.devicePixelRatio || 1, 2),
     w: window.innerWidth,
     h: window.innerHeight,
   });
+  env.lite = !env.fine || env.lowPower || env.gpu === 'weak' || env.gpu === 'soft';
   root.classList.add('js', env.fine ? 'is-fine' : 'is-coarse');
   if (env.touch) root.classList.add('is-touch');
   if (env.reduced) root.classList.add('is-reduced');
   if (!env.webgl) root.classList.add('no-webgl');
   if (env.mobile) root.classList.add('is-mobile');
+  if (env.lite) root.classList.add('is-lite');
 
   /* ───────────────────────── sectors ─────────────────────────
      The journey. `id` is the section element id (kept from v4 so
@@ -168,7 +193,7 @@
     palette: { a: SECTORS[0].rgbA.slice(), b: SECTORS[0].rgbB.slice(), dim: SECTORS[0].dim }, // CPU cross-faded sector colours
     pointer: { x: env.w / 2, y: env.h / 2, nx: 0, ny: 0, sx: 0, sy: 0, down: false, active: false }, // px, normalised -1..1 (y down), smoothed
     audio: { level: 0, bass: 0, mid: 0, high: 0 }, // written by audio.js each frame
-    quality: env.mobile ? 0 : env.lowPower ? 1 : 2,  // 0 low · 1 medium · 2 high (cosmos may lower it)
+    quality: env.mobile || env.gpu === 'soft' ? 0 : env.lite ? 1 : 2,  // 0 low · 1 medium · 2 high (cosmos may lower or raise it)
     entered: false,     // true once the visitor pressed ENGAGE on the loader
     modalOpen: false,   // written by hud.js
     paused: false,      // true while an overlay (e.g. mini-game) wants background work idle

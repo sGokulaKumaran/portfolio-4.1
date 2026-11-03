@@ -73,6 +73,8 @@ html.menu-open { overflow: hidden; }
   border-bottom-color: var(--hud-line);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
 }
+/* lite: the backdrop redraws every frame, so a live blur would be re-computed every frame — go opaque instead */
+html.is-lite .site-header.is-scrolled { background-color: rgba(5, 6, 10, 0.9); -webkit-backdrop-filter: none; backdrop-filter: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 0.8rem; min-height: 44px; flex: none; }
 .brand-mark { font: 700 1.2rem / 1 var(--font-display); letter-spacing: -0.03em; color: var(--ink); }
@@ -192,6 +194,7 @@ html.is-coarse .audio-btn, html.is-coarse .hire-btn, html.is-coarse .console-btn
   transition: opacity var(--t-2) var(--ease-out), visibility 0s linear var(--t-2);
 }
 .star-chart.is-open { opacity: 1; visibility: visible; transition-delay: 0s; }
+html.is-lite .star-chart { background: rgba(5, 6, 10, 0.97); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .chart-head { display: flex; align-items: center; justify-content: space-between; height: var(--header-h); flex: none; }
 .chart-title { font: 500 var(--fs-micro) / 1 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
 .chart-title span { color: var(--hud-ink); }

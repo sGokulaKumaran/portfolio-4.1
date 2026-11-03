@@ -268,13 +268,13 @@
     let yaw = 0.6, pitch = BASE_PITCH, vyaw = 0, vpitch = 0, spin = 1;
     let steerYaw = null, steerPitch = null, steerTimer = 0;
     let started = false, converged = env.reduced, t0 = 0;
-    let visible = false, dirty = true, dirtyUntil = 0, drawn = false, nextFit = 0;
+    let visible = false, dirty = true, dirtyUntil = 0, drawn = false, nextFit = 0, liteAcc = 0;
     let active = 0, focus = -1, hover = -1, actT = 1, burst = 1, ax = null, ay = 0;
     let dragging = false, pid = -1, lastX = 0, lastY = 0, dragDX = 0, dragDY = 0, travel = 0, downT = 0;
     let ptrIn = false, mx = 0, my = 0;
 
     function fit() {
-      const f = fitCanvas(canvas, 1.5);
+      const f = fitCanvas(canvas, env.lite ? 1.25 : 1.5);
       W = canvas.clientWidth || f.w; H = canvas.clientHeight || f.h;
       ready = W > 2 && H > 2;
       if (!ready) return;
@@ -592,6 +592,7 @@
     fit();
     onVisible(canvas, v => { visible = v; if (v) dirty = true; });
     bus.on('resize', fit);
+    bus.on('lite', fit);
     bus.on('measure', () => { if (canvas.clientWidth !== W || canvas.clientHeight !== H) fit(); });
     bus.on('sector', () => { dirtyUntil = state.time + 3; });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { stale = true; dirty = true; }).catch(() => {});
@@ -610,6 +611,14 @@
         step(0);
         draw(s.time, 0);
       } else {
+        /* lite: ~30 fps while idle, full rate while dragging */
+        if (env.lite && !dragging && !dirty) {
+          liteAcc += dt;
+          if (liteAcc < 1 / 31) return;
+          dt = Math.min(liteAcc, 0.1);
+        }
+        liteAcc = 0;
+        dirty = false;
         step(dt);
         draw(s.time, dt);
       }
