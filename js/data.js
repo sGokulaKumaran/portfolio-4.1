@@ -69,7 +69,7 @@
         title: 'The Back Exit', listTitle: 'The Back Exit',
         meta: 'Game · Unity · 2024', type: 'Game', year: '2024',
         icon: '👁', art: 'horror',
-        image: 'images/projects/the-back-exit.jpg', thumb: 'images/thumbs/the-back-exit.jpg', video: 'https://res.cloudinary.com/pyeu3azf/video/upload/v1791469778/the-back-exit.mp4', videoLength: '5:20', videoSize: '15.2 MB',
+        image: 'images/projects/the-back-exit.jpg', thumb: 'images/thumbs/the-back-exit.jpg', video: 'https://res.cloudinary.com/ubhnc15t/video/upload/v1793953109/The_Back_Exit.mp4', videoLength: '5:19', videoSize: '15.2 MB',
         short: 'First-person psychological horror game built in Unity with custom UI and AI-driven NPC pathfinding.',
         desc: 'First-person psychological horror game built solo in Unity — featuring an atmospheric forest environment, custom horror UI, camera bobbing, interactive elements, trigger-based jump scares, and AI-driven NPC pathfinding.',
         tags: ['Unity 3D', 'C#', 'Horror Systems', 'AI Pathfinding', 'Shader Work'],
