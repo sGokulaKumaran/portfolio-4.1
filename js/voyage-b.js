@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · voyage-b.js
+   VOYAGER 01 · voyage-b.js
    Sector 2 "Crew" (about)      — crew dossier with pixel-accurate
                                   biometric x-ray lens & interactive
                                   loadout chips.

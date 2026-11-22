@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · cosmos.js
+   VOYAGER 01 · cosmos.js
    The permanent backdrop: full-screen fragment shader (WebGL1,
    GLSL ES 1.00, single pass, procedural) on <canvas id="cosmos">.
 

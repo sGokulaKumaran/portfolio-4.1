@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · extras.css — Secret Panel, Explorer Quests & Dual Arcade Deck
+   VOYAGER 01 · extras.css — Secret Panel, Explorer Quests & Dual Arcade Deck
    ═══════════════════════════════════════════════════════════════ */
 
 .secret[hidden], .quests[hidden], .game[hidden] { display: none !important; }

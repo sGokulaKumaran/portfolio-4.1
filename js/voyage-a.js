@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · voyage-a.js
+   VOYAGER 01 · voyage-a.js
    Sector 0 ORIGIN (hero) and sector 1 SIGNAL (role).
 
    Upgrades in 6.0:

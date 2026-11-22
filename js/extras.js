@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · extras.js
+   VOYAGER 01 · extras.js
    The Three Hidden Rooms of Voyager:
      1. Secret Bridge Panel       — Konami code (↑↑↓↓←→←→BA) or Ship Console
      2. Explorer Field Objectives — 7 interactive anomalies across the 10 sectors (Q or Header Star)

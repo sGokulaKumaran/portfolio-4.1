@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · voyage-d.js
+   VOYAGER 01 · voyage-d.js
    Sector 7 · Systems         — an orrery of skills + discipline cards
    Sector 8 · Constellations  — a playable certificate constellation
    Sector 9 · Transmission    — contact details + transmission console

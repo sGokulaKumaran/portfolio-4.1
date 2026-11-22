@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · voyage-c.js
+   VOYAGER 01 · voyage-c.js
    Sector 04 MISSIONS    — work list + cursor-following preview +
                            interactive Rows / Bento Grid view toggle
    Sector 05 TELEMETRY   — four stat gauges

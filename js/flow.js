@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VOYAGER 6.0 · flow.js
+   VOYAGER 01 · flow.js
    Travel between sectors and every overlay layer:
      · GK.navTo — cancellable scroll tween for one sector, hyperspace
        jump for two or more
@@ -622,7 +622,7 @@
         '<div class="console-veil" data-console="close" data-cursor="Close" data-sfx="none" data-sfx-hover="none"></div>' +
         '<div class="console-panel" role="dialog" aria-modal="true" aria-label="Ship console" tabindex="-1">' +
           '<div class="console-head">' +
-            '<span class="console-prompt hud-label" aria-hidden="true">GK-06' + ICON.chev + '</span>' +
+            '<span class="console-prompt hud-label" aria-hidden="true">VOYAGER 01' + ICON.chev + '</span>' +
             '<input class="console-input" id="consoleInput" type="text" role="combobox" aria-expanded="true" aria-controls="consoleList" aria-autocomplete="list" aria-label="Search sectors, missions and commands" placeholder="Search sectors, missions, commands" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" />' +
             '<button type="button" class="console-close" data-console="close" data-sfx="none" aria-label="Close console"><kbd>Esc</kbd></button>' +
           '</div>' +
