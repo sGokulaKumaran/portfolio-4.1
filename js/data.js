@@ -5,7 +5,7 @@
    the same objects — edit content in ONE place.
 
    Item shape understood by GK.modal.open(item):
-   { kind, title, meta, desc, tags[], image?, thumb?, video?, link?, download?, icon?, art? }
+   { kind, title, meta, desc, tags[], image?, thumb?, video?, link?, repo?, download?, isCurrent?, icon?, art? }
    `image` is the full-size file (modal); `thumb` is a ≤720px JPEG for lists, cards and hover previews.
    ═══════════════════════════════════════════════════════════════ */
 (function () {
@@ -132,6 +132,7 @@
         tags: ['HTML', 'CSS', 'JavaScript'],
         listTags: ['HTML', 'CSS', 'JavaScript'],
         link: 'https://gokulakumarans2.netlify.app',
+        repo: 'https://github.com/sGokulaKumaran/Portfolio-version-2.0',
       },
       {
         kind: 'project', id: 'ridewise', category: 'web', num: '07',
@@ -144,18 +145,20 @@
         tags: ['Java', 'Spring Boot', 'React', 'WebSocket', 'Full-Stack', 'GPS Telemetry'],
         listTags: ['Java', 'Spring Boot', 'React', 'WebSocket'],
         link: 'https://ride-wise.pages.dev',
+        repo: 'https://github.com/sGokulaKumaran/Ride-Wise',
       },
       {
-        kind: 'project', id: 'portfolio-v4', category: 'web', num: '08',
-        title: 'Sci-Fi Story Portfolio', listTitle: 'Personal portfolio v4',
+        kind: 'project', id: 'portfolio-v4-1', category: 'web', num: '08', isCurrent: true,
+        title: 'Voyager 01 — Portfolio v4.1', listTitle: 'Voyager 01 — Portfolio v4.1',
         meta: 'Interactive Web · 2026', type: 'Interactive Web', year: '2026',
         icon: '◉', art: 'portfolio',
-        image: 'images/projects/portfoliov4.png', thumb: 'images/thumbs/portfoliov4.jpg',
-        short: 'Cinematic scroll-story portfolio with rich animations, Web Audio sound design, and an immersive sci-fi interface.',
-        desc: 'Interactive scroll-driven portfolio blending cinematic storytelling, dynamic canvas visuals, and custom Web Audio sound effects — built cleanly without frameworks.',
-        tags: ['HTML', 'CSS', 'JavaScript', 'Web Audio', 'Interactive'],
-        listTags: ['HTML', 'CSS', 'JavaScript', 'Audio'],
-        link: 'https://gokulakumarans4.netlify.app/',
+        image: 'images/projects/portfoliov4-1.png', thumb: 'images/thumbs/portfoliov4-1.jpg',
+        short: "You're exploring it right now — a zero-framework WebGL black-hole voyage with live Web Audio synthesis and 10 sectors.",
+        desc: "You're flying through it right now. Built without frameworks or build tools (13 IIFE modules and 8 CSS layers), Voyager 01 pairs a single-pass WebGL Kerr black hole shader with generative Web Audio music, 7 explorer field objectives, and a dual-cartridge HTML5 arcade deck.",
+        tags: ['HTML5', 'CSS3', 'JavaScript', 'WebGL GLSL', 'Web Audio API', 'Zero-Build'],
+        listTags: ['WebGL GLSL', 'Web Audio', 'JavaScript', 'Zero-Build'],
+        link: 'https://gokulakumarans.pages.dev/',
+        repo: 'https://github.com/sGokulaKumaran/portfolio-4.1',
       },
     ],
 

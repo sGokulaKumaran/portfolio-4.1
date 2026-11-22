@@ -2,7 +2,8 @@
 
 > **"A portfolio you fly through."**  
 > A modular, zero-dependency sci-fi space voyage built in pure vanilla HTML5, CSS3, WebGL1 GLSL, and the Web Audio API—featuring a single-pass relativistic Kerr black hole shader, a real-time generative space music synthesizer, 10 interactive sectors, 7 discoverable field anomalies, and a dual-cartridge arcade deck.  
-> 🌐 **Live Production Site**: [https://gokulakumarans.pages.dev/](https://gokulakumarans.pages.dev/)
+> 🌐 **Live Production Site**: [https://gokulakumarans.pages.dev/](https://gokulakumarans.pages.dev/)  
+> 🐙 **GitHub Repository**: [https://github.com/sGokulaKumaran/portfolio-4.1](https://github.com/sGokulaKumaran/portfolio-4.1)
 
 ![Voyager 01 Hero — Sector 00 Origin](docs/screenshots/02-origin-hero.png)
 
@@ -134,6 +135,7 @@ Because Voyager 01 is engineered without build tools or external runtime depende
 **Gokula Kumaran S**  
 *Game & Full-Stack Developer — Tamil Nadu, India (`11.1271° N · 78.6569° E`)*  
 - **Live Portfolio (v4.1)**: [https://gokulakumarans.pages.dev/](https://gokulakumarans.pages.dev/)
+- **Portfolio Repository**: [sGokulaKumaran/portfolio-4.1](https://github.com/sGokulaKumaran/portfolio-4.1)
 - **GitHub**: [@sGokulaKumaran](https://github.com/sGokulaKumaran)
 - **LinkedIn**: [gokula-kumaran-s](https://www.linkedin.com/in/gokula-kumaran-s-503545328/)
 - **Instagram**: [@goku_1._38](https://www.instagram.com/goku_1._38)

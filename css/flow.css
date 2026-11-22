@@ -86,6 +86,14 @@ html.is-lite .briefing-veil { background: rgba(5, 6, 10, 0.94); -webkit-backdrop
 }
 .briefing-strip::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); }
 .briefing-kind { color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+.briefing-here {
+  display: inline-flex; align-items: center; gap: 0.4rem; flex: none;
+  padding: 0.24rem 0.55rem; border: 1px solid rgba(61, 220, 132, 0.35); border-radius: var(--radius-pill);
+  background: rgba(61, 220, 132, 0.08); color: var(--green); letter-spacing: 0.1em;
+}
+.briefing-here[hidden] { display: none; }
+.briefing-here .dot { width: 5px; height: 5px; }
+@media (max-width: 480px) { .briefing-strip { flex-wrap: wrap; row-gap: 0.3rem; } }
 .briefing-tools { flex: none; display: flex; align-items: center; gap: 2px; }
 .briefing-tools i { width: 1px; height: 20px; margin-inline: 6px; background: rgba(243, 241, 234, 0.10); }
 .briefing-tool {

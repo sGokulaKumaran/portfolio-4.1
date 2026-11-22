@@ -109,12 +109,29 @@ html.is-reduced .panel-work .mission-item::before { transition-delay: 0s; }
   display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; margin-top: 0.5rem;
   font: 500 var(--fs-micro) / 1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3);
 }
-.panel-work .mission-footage {
+.panel-work .mission-footage,
+.panel-work .mission-badge {
   display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.24rem 0.5rem 0.24rem 0.42rem; border: 1px solid rgba(0, 229, 255, 0.3); border-radius: var(--radius-sm);
+  padding: 0.24rem 0.5rem 0.24rem 0.42rem; border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  color: var(--ink-2);
+}
+.panel-work .mission-footage svg,
+.panel-work .mission-badge svg { flex: none; }
+.panel-work .mission-footage {
+  border-color: rgba(0, 229, 255, 0.3);
   color: var(--cyan);
 }
-.panel-work .mission-footage svg { flex: none; }
+.panel-work .mission-oss {
+  border-color: rgba(var(--sector-a-rgb), 0.34);
+  color: var(--violet-ink);
+}
+.panel-work .mission-here {
+  padding-left: 0.5rem;
+  border-color: rgba(61, 220, 132, 0.35);
+  background: rgba(61, 220, 132, 0.08);
+  color: var(--green);
+}
+.panel-work .mission-here .dot { width: 5px; height: 5px; }
 .panel-work .mission-desc {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
   font-size: var(--fs-sm); line-height: 1.5; color: var(--ink-2);

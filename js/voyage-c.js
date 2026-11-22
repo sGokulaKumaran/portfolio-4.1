@@ -21,6 +21,7 @@
     const ICON = {
       arrow: '<svg ' + SVG + ' width="16" height="16"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>',
       play: '<svg ' + SVG + ' width="10" height="10"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
+      repo: '<svg ' + SVG + ' width="11" height="11"><circle cx="6.5" cy="5.5" r="2"/><circle cx="6.5" cy="18.5" r="2"/><circle cx="17.5" cy="8.5" r="2"/><path d="M6.5 7.5v9M17.5 10.5a6 6 0 0 1-6 6h-5"/></svg>',
       rows: '<svg ' + SVG + ' width="14" height="14"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
       grid: '<svg ' + SVG + ' width="14" height="14"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>',
     };
@@ -90,6 +91,8 @@
                 '<span class="mission-meta">' +
                   (line ? '<span>' + esc(line) + '</span>' : '') +
                   (p.video ? '<span class="mission-footage">' + ICON.play + 'Footage</span>' : '') +
+                  (p.repo ? '<span class="mission-badge mission-oss">' + ICON.repo + 'Open Source</span>' : '') +
+                  (p.isCurrent ? '<span class="mission-badge mission-here"><i class="dot" aria-hidden="true"></i>You are here</span>' : '') +
                 '</span>' +
               '</span>' +
               '<span class="mission-desc" id="missionDesc' + i + '">' + esc(p.short || p.desc || '') + '</span>' +

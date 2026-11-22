@@ -34,6 +34,7 @@
       next: svg('<path d="M9.5 5.5L16 12l-6.5 6.5"/>'),
       play: svg('<path d="M8 5.5v13l11-6.5z"/>'),
       ext: svg('<path d="M8 16l8.5-8.5M9.5 7.5h7v7"/>'),
+      repo: svg('<circle cx="6.5" cy="5.5" r="2"/><circle cx="6.5" cy="18.5" r="2"/><circle cx="17.5" cy="8.5" r="2"/><path d="M6.5 7.5v9M17.5 10.5a6 6 0 0 1-6 6h-5"/>'),
       down: svg('<path d="M12 4.5v11M7 11l5 5 5-5M5.5 19.5h13"/>'),
       chev: svg('<path d="M9 6l6 6-6 6"/>'),
       enter: svg('<path d="M18.5 6v6.5h-12M10 9l-3.5 3.5L10 16"/>'),
@@ -318,7 +319,7 @@
         '<div class="briefing-veil" data-briefing="close" data-cursor="Close" data-sfx="none" data-sfx-hover="none"></div>' +
         '<div class="briefing-panel" role="dialog" aria-modal="true" aria-labelledby="briefingTitle" aria-describedby="briefingDesc" tabindex="-1">' +
           '<header class="briefing-bar">' +
-            '<p class="briefing-strip"><span class="briefing-kind"></span><span class="briefing-count"></span></p>' +
+            '<p class="briefing-strip"><span class="briefing-kind"></span><span class="briefing-count"></span><span class="briefing-here" hidden><i class="dot" aria-hidden="true"></i>You are here</span></p>' +
             '<div class="briefing-tools">' +
               tool('prev', 'Previous entry', ICON.prev) + tool('next', 'Next entry', ICON.next) +
               '<i aria-hidden="true"></i>' + tool('close', 'Close briefing', ICON.close) +
@@ -338,7 +339,7 @@
         '</div>';
       const pick = sel => qs(sel, bf.root);
       bf.panel = pick('.briefing-panel'); bf.scroll = pick('.briefing-scroll');
-      bf.kind = pick('.briefing-kind'); bf.count = pick('.briefing-count');
+      bf.kind = pick('.briefing-kind'); bf.count = pick('.briefing-count'); bf.here = pick('.briefing-here');
       bf.prev = pick('[data-briefing="prev"]'); bf.next = pick('[data-briefing="next"]');
       bf.media = pick('.briefing-media'); bf.meta = pick('.briefing-meta');
       bf.title = pick('.briefing-title'); bf.desc = pick('.briefing-desc');
@@ -423,6 +424,7 @@
       bf.item = item;
       bf.kind.textContent = kind.word;
       bf.count.textContent = n > 1 ? '· ' + pad(bf.index + 1) + ' / ' + pad(n) : '';
+      if (bf.here) bf.here.hidden = !item.isCurrent;
       bf.prev.hidden = bf.next.hidden = n < 2;
       bf.meta.textContent = item.meta || '';
       bf.desc.textContent = item.desc || item.short || '';
@@ -433,9 +435,15 @@
 
       const link = (href, label, icon, primary) => '<a class="btn' + (primary ? ' btn-primary' : '') + '" href="' + esc(href) + '" target="_blank" rel="noopener" data-spot><span>' + label + '</span>' + icon + '</a>';
       let acts = '';
-      if (item.download) acts += link(item.download, 'Download', ICON.down, true);
-      if (item.link) acts += link(item.link, 'Visit website', ICON.ext, !item.download);
-      if (kind.doc && item.image) acts += link(item.image, 'Open full size', ICON.ext, false);
+      if (item.isCurrent) {
+        if (item.repo) acts += link(item.repo, 'GitHub Repo', ICON.repo, true);
+        if (item.link) acts += link(item.link, 'Visit website', ICON.ext, !item.repo);
+      } else {
+        if (item.download) acts += link(item.download, 'Download', ICON.down, true);
+        if (item.link) acts += link(item.link, 'Visit website', ICON.ext, !item.download);
+        if (item.repo) acts += link(item.repo, 'GitHub Repo', ICON.repo, !item.download && !item.link);
+        if (kind.doc && item.image) acts += link(item.image, 'Open full size', ICON.ext, false);
+      }
       bf.actions.innerHTML = acts;
       bf.actions.hidden = !acts;
 
@@ -576,7 +584,7 @@
       const brief = item => from => modal.open(item, { from });
 
       SECTORS.forEach(s => add('Navigate', 'sector', s.label, pad(s.index) + ' · ' + s.name, s.name + ' ' + s.key + ' sector go to', () => navTo(s.index)));
-      (d.projects || []).forEach(p => add('Missions', 'mission', p.title, p.meta, [p.listTitle, p.type, 'project'].concat(p.tags || []).join(' '), brief(p)));
+      (d.projects || []).forEach(p => add('Missions', 'mission', p.title, p.meta, [p.listTitle, p.type, 'project'].concat(p.tags || [], p.repo ? ['github', 'open source', 'repository'] : [], p.isCurrent ? ['this site', 'current', 'voyager', 'you are here'] : []).join(' '), brief(p)));
       (d.education || []).forEach(x => add('Records', 'record', x.title, 'Education · ' + (x.period || ''), [x.short, x.org, 'school college'].concat(x.tags || []).join(' '), brief(x)));
       (d.internships || []).forEach(x => add('Records', 'record', x.title, 'Deployment · ' + (x.org || ''), [x.org, x.place, 'internship'].concat(x.tags || []).join(' '), brief(x)));
       (d.certs || []).forEach(x => add('Records', 'record', x.title, 'Certificate · ' + (x.meta || ''), [x.short, 'certification credential'].concat(x.tags || []).join(' '), brief(x)));

@@ -88,7 +88,8 @@ Rather than writing repetitive scroll/pointer scripts for every card and heading
 - **Sector 04 · Missions (`initMissions`)**:
   - **Category Filtering & View Switcher**: Filter projects live across `All (08)`, `Unity & 3D (03)`, `AI & Python (01)`, and `Interactive Web (04)`, and toggle between **Table Rows View** and **Bento Grid View** (persisted in `GK.store`).
   - **Cursor-Following Floating Preview (`#workPreview`)**: In Table mode on fine pointers, hovering any project row smoothly glides a floating `16:10` thumbnail preview alongside the cursor using damped coordinates.
-  - Clicking any project opens the full **Mission Briefing Modal (`GK.modal.open`)** with high-res imagery, tags, live links, and on-demand Cloudinary video streaming.
+  - **Direct Repository Badges & Status Indicators**: Open-source projects display an **Open Source** badge, and **Voyager 01 — Portfolio v4.1** features an active **You are here** status badge with self-referential telemetry.
+  - Clicking any project opens the full **Mission Briefing Modal (`GK.modal.open`)** with high-res imagery, tags, live deployment links, direct GitHub repository buttons, and on-demand Cloudinary video streaming.
 - **Sector 05 · Telemetry (`initTelemetry`)**:
   - Renders 4 radial SVG arc gauges (`6+ Certifications`, `8+ Projects shipped`, `2+ Internships`, `100% Dedication`) whose stroke-dashoffset animates synchronously with `data-count`.
 - **Sector 06 · Deployments (`initDeployments`)**:
